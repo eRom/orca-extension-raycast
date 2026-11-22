@@ -21,10 +21,10 @@ async function readConversation(sessionId: string): Promise<Conversation> {
   );
 }
 
-/** Texte de la dernière entrée de l'agent (jamais celle de l'utilisateur), ou null. */
+/** Texte du dernier message de l'agent (ni celui de l'utilisateur, ni une erreur), ou null. */
 function lastAgentMessage(conversation: Conversation): string | null {
   for (let index = conversation.entries.length - 1; index >= 0; index--) {
-    if (conversation.entries[index].role !== "user") {
+    if (conversation.entries[index].role === "assistant") {
       return conversation.entries[index].text;
     }
   }
@@ -32,9 +32,12 @@ function lastAgentMessage(conversation: Conversation): string | null {
 }
 
 function toMarkdown(conversation: Conversation, authorName: string): string {
-  const blocks = conversation.entries.map(
-    (entry) => `**${entry.role === "user" ? "Toi" : authorName}**\n\n${entry.text}`,
-  );
+  const blocks = conversation.entries.map((entry) => {
+    if (entry.role === "error") {
+      return `**Erreur**\n\n${entry.text}`;
+    }
+    return `**${entry.role === "user" ? "Toi" : authorName}**\n\n${entry.text}`;
+  });
   if (conversation.state === "working") {
     blocks.push("*En cours…*");
   }

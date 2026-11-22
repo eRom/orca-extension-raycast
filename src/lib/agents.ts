@@ -49,13 +49,18 @@ export function sectionOf(state: string): AgentSection {
 /**
  * Premier candidat non vide qui ne commence pas par `<` (bruit du type `<local-command-caveat>`),
  * dans l'ordre : nom de conversation, titre de tâche, nom affiché, première ligne du prompt tronquée à 80 caractères.
+ * Un candidat égal au nom du bot du worktree est ignoré : le nom d'un chat de bot est celui du bot,
+ * ce qui rendrait tous ses chats identiques ; on retombe alors sur le prompt.
  */
-export function displayTitle(agent: {
-  conversationName?: string | null;
-  taskTitle?: string | null;
-  displayName?: string | null;
-  prompt?: string | null;
-}): string {
+export function displayTitle(
+  agent: {
+    conversationName?: string | null;
+    taskTitle?: string | null;
+    displayName?: string | null;
+    prompt?: string | null;
+  },
+  botName?: string | null,
+): string {
   const firstPromptLine = asString(agent.prompt)
     .split("\n")
     .map((line) => line.trim())
@@ -70,18 +75,25 @@ export function displayTitle(agent: {
   const candidates = [agent.conversationName, agent.taskTitle, agent.displayName].map(asString);
   candidates.push(truncatedPrompt);
 
+  const trimmedBotName = botName?.trim() ?? "";
+
   for (const candidate of candidates) {
     const trimmed = candidate.trim();
-    if (trimmed !== "" && !trimmed.startsWith("<")) {
+    if (trimmed !== "" && !trimmed.startsWith("<") && (trimmedBotName === "" || trimmed !== trimmedBotName)) {
       return trimmed;
     }
   }
   return UNTITLED;
 }
 
-/** Sous-titre d'une ligne : le bot s'il y en a un, sinon dépôt et espace de travail. */
+/** Sous-titre d'une ligne : le bot s'il y en a un, sinon dépôt et espace de travail (le dépôt seul s'ils portent le même nom). */
 export function subtitleOf(worktree: { bot?: string | null; repo?: string; displayName?: string }): string {
-  return worktree.bot ? `Bot · ${worktree.bot}` : `${worktree.repo ?? ""} · ${worktree.displayName ?? ""}`;
+  if (worktree.bot) {
+    return `Bot · ${worktree.bot}`;
+  }
+  const repo = worktree.repo ?? "";
+  const workspace = worktree.displayName ?? "";
+  return repo === workspace ? repo : `${repo} · ${workspace}`;
 }
 
 /**
@@ -124,12 +136,15 @@ export function parseOpenAgents(result: unknown): OpenAgent[] {
         state,
         section: sectionOf(state),
         harness: asString(agent.agentType),
-        title: displayTitle({
-          conversationName: asString(agent.conversationName),
-          taskTitle: asString(agent.taskTitle),
-          displayName: asString(agent.displayName),
-          prompt: asString(agent.prompt),
-        }),
+        title: displayTitle(
+          {
+            conversationName: asString(agent.conversationName),
+            taskTitle: asString(agent.taskTitle),
+            displayName: asString(agent.displayName),
+            prompt: asString(agent.prompt),
+          },
+          bot,
+        ),
         subtitle: subtitleOf({ bot, repo, displayName: workspace }),
         lastPrompt: asString(agent.prompt).trim() !== "" ? asString(agent.prompt) : null,
         lastMessage: asString(agent.lastAssistantMessage) || null,

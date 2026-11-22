@@ -120,6 +120,16 @@ describe("parseOpenAgents", () => {
     expect(bare.updatedAt).toBe(0);
   });
 
+  test("two chats of the same bot get titles drawn from their own prompts", () => {
+    const agents = parseOpenAgents(
+      psWith({ bot: "test", displayName: "test", workspaceKind: "folder-workspace" }, [
+        { orcaSessionId: "a", conversationName: "test", prompt: "Quelle heure ?", state: "done" },
+        { orcaSessionId: "b", conversationName: "test", prompt: "Et la météo ?", state: "done" },
+      ]),
+    );
+    expect(agents.map((agent) => agent.title)).toEqual(["Quelle heure ?", "Et la météo ?"]);
+  });
+
   test("a missing state is kept and filed in running", () => {
     const [agent] = parseOpenAgents(psWith({}, [{ address: "term_1" }]));
     expect(agent.section).toBe("running");
@@ -165,6 +175,17 @@ describe("displayTitle", () => {
   test("a prompt starting with < still falls back", () => {
     expect(displayTitle({ prompt: "<system>x" })).toBe("Session sans titre");
   });
+
+  test("a candidate equal to the bot name is skipped so bot chats stay distinguishable", () => {
+    expect(displayTitle({ conversationName: "test", prompt: "Quelle heure ?" }, "test")).toBe("Quelle heure ?");
+    expect(displayTitle({ conversationName: " test ", taskTitle: "Task", prompt: "Q" }, "test")).toBe("Task");
+    expect(displayTitle({ conversationName: "Other", prompt: "Q" }, "test")).toBe("Other");
+    expect(displayTitle({ conversationName: "test", prompt: "Q" }, null)).toBe("test");
+  });
+
+  test("a bot chat with only the bot name keeps a title", () => {
+    expect(displayTitle({ conversationName: "test", prompt: "" }, "test")).toBe("Session sans titre");
+  });
 });
 
 describe("sectionOf", () => {
@@ -183,6 +204,12 @@ describe("subtitleOf", () => {
     expect(subtitleOf({ bot: "LeBombé", repo: "Bots", displayName: "LeBombé" })).toBe("Bot · LeBombé");
     expect(subtitleOf({ bot: null, repo: "orca", displayName: "main" })).toBe("orca · main");
     expect(subtitleOf({ repo: "orca", displayName: "main" })).toBe("orca · main");
+  });
+
+  test("shows the repo once when repo and workspace share the same name", () => {
+    expect(subtitleOf({ bot: null, repo: "orca-raycast-extension", displayName: "orca-raycast-extension" })).toBe(
+      "orca-raycast-extension",
+    );
   });
 });
 

@@ -1,14 +1,14 @@
 import { Action, ActionPanel, Detail, Icon, Keyboard, Toast, showToast } from "@raycast/api";
 import { useEffect, useRef, useState } from "react";
 import { type Bot, launchArgs } from "../lib/bots";
-import { type Conversation, isAnswered, latestReply, parseConversation } from "../lib/conversation";
+import { type Conversation, isAnswered, latestError, latestReply, parseConversation } from "../lib/conversation";
 import { OrcaCliError, runOrca } from "../lib/orca-cli";
 import { getOrcaPath } from "../lib/preferences";
 
 const POLL_INTERVAL_MS = 1_500;
 const MAX_WAIT_MS = 10 * 60 * 1_000;
 
-type Phase = "waiting" | "answered" | "timeout" | "error";
+type Phase = "waiting" | "answered" | "ended" | "timeout" | "error";
 
 type Props = {
   bot: Bot;
@@ -49,6 +49,8 @@ export function AnswerView({ bot, prompt, onAskAgain }: Props) {
   const [reply, setReply] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Erreur remontée par le bot lui-même (entrée `error` de la conversation).
+  const [botError, setBotError] = useState<string | null>(null);
 
   // Une seule sollicitation par montage, même si l'effet est rejoué (double montage React).
   const launchRef = useRef<Promise<string> | null>(null);
@@ -79,6 +81,13 @@ export function AnswerView({ bot, prompt, onAskAgain }: Props) {
       if (isAnswered(conversation)) {
         setReply(latestReply(conversation));
         setPhase("answered");
+        return;
+      }
+      const botError = latestError(conversation);
+      setBotError(botError);
+      // Tour terminé sans réponse exploitable : inutile d'attendre davantage.
+      if (conversation.state === "done") {
+        setPhase("ended");
         return;
       }
       if (Date.now() - startedAt >= MAX_WAIT_MS) {
@@ -115,8 +124,13 @@ export function AnswerView({ bot, prompt, onAskAgain }: Props) {
     case "error":
       body = `*Échec : ${errorMessage ?? "erreur inconnue"}*`;
       break;
+    case "ended":
+      body = botError
+        ? `**Erreur**\n\n${quote(botError)}`
+        : `*${bot.name} n'a pas répondu. Ouvre ses chats dans Orca pour voir ce qui s'est passé.*`;
+      break;
     default:
-      body = `*${bot.name} réfléchit…*`;
+      body = botError ? `**Erreur**\n\n${quote(botError)}` : `*${bot.name} réfléchit…*`;
   }
 
   return (

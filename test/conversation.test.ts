@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { type Conversation, isAnswered, latestReply, parseConversation } from "../src/lib/conversation";
+import { type Conversation, isAnswered, latestError, latestReply, parseConversation } from "../src/lib/conversation";
 
 const loadResult = (name: string): unknown =>
   JSON.parse(readFileSync(join(__dirname, "fixtures", name), "utf8")).result;
@@ -62,6 +62,79 @@ describe("parseConversation", () => {
     for (const value of [null, undefined, 42, "x", {}, { entries: "nope" }]) {
       expect(parseConversation(value)).toEqual({ state: "unknown", entries: [] });
     }
+  });
+
+  // Fixture synthétique (non capturée) : le formateur de la CLI (agents/agent-conversations.js, formatEntry)
+  // émet `{ kind: "error", text }` ; le champ `message` n'y est qu'un repli défensif.
+  test("keeps error entries with the error role, using text then message", () => {
+    const conv = parseConversation({
+      state: "done",
+      entries: [
+        { kind: "message", role: "user", text: "q" },
+        { kind: "error", text: "rate limited" },
+        { kind: "error", message: "boom" },
+        { kind: "error" },
+        { kind: "tool", text: "ls" },
+      ],
+    });
+    expect(conv.entries).toEqual([
+      { role: "user", text: "q" },
+      { role: "error", text: "rate limited" },
+      { role: "error", text: "boom" },
+      { role: "error", text: "Erreur sans détail." },
+    ]);
+  });
+});
+
+describe("latestError", () => {
+  test("returns the error text when the last entry after the user message is an error", () => {
+    const conv: Conversation = {
+      state: "done",
+      entries: [
+        { role: "user", text: "q" },
+        { role: "error", text: "rate limited" },
+      ],
+    };
+    expect(latestError(conv)).toBe("rate limited");
+    expect(isAnswered(conv)).toBe(false);
+  });
+
+  test("an error followed by a reply is not the outcome", () => {
+    const conv: Conversation = {
+      state: "done",
+      entries: [
+        { role: "user", text: "q" },
+        { role: "error", text: "transient" },
+        { role: "assistant", text: "answer" },
+      ],
+    };
+    expect(latestError(conv)).toBeNull();
+    expect(isAnswered(conv)).toBe(true);
+  });
+
+  test("a reply followed by an error is not a clean answer", () => {
+    const conv: Conversation = {
+      state: "done",
+      entries: [
+        { role: "user", text: "q" },
+        { role: "assistant", text: "partial" },
+        { role: "error", text: "crashed" },
+      ],
+    };
+    expect(latestError(conv)).toBe("crashed");
+    expect(isAnswered(conv)).toBe(false);
+  });
+
+  test("an error before the last user message is ignored", () => {
+    const conv: Conversation = {
+      state: "working",
+      entries: [
+        { role: "user", text: "first" },
+        { role: "error", text: "old" },
+        { role: "user", text: "second" },
+      ],
+    };
+    expect(latestError(conv)).toBeNull();
   });
 });
 
