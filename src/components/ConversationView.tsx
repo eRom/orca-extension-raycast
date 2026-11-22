@@ -45,7 +45,7 @@ function toMarkdown(conversation: Conversation, authorName: string): string {
     blocks.push("*En cours…*");
   }
   const text = blocks.join("\n\n---\n\n");
-  return conversation.limited ? `*Seuls les ${ENTRY_LIMIT} derniers messages sont affichés.*\n\n${text}` : text;
+  return conversation.limited ? `*Conversation partielle : Orca a omis ou raccourci une partie des messages.*\n\n${text}` : text;
 }
 
 export function ConversationView({ sessionId, title, bot, harness }: Props) {
