@@ -75,6 +75,7 @@
     "build": "ray build",
     "dev": "ray develop",
     "lint": "ray lint",
+    "publish": "npx @raycast/api@latest publish",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   }
