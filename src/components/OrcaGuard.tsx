@@ -5,7 +5,7 @@ import { OrcaCliError, runOrca } from "../lib/orca-cli";
 import { getOrcaPath } from "../lib/preferences";
 import { parseStatus } from "../lib/status";
 
-const ORCA_APP_PATH = "/Applications/Orca.app";
+export const ORCA_APP_PATH = "/Applications/Orca.app";
 
 /**
  * Vérifie qu'Orca est joignable avant d'afficher la commande.
