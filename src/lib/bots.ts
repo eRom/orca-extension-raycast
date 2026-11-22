@@ -97,5 +97,16 @@ export function launchArgs(bot: Bot, prompt: string): string[] {
       `Dossier introuvable pour le bot ${bot.name} : impossible de le solliciter sans risquer un mauvais chemin.`,
     );
   }
-  return ["agent", "launch", "--agent", bot.harness, "--worktree", `path:${bot.folder}`, "--surface", "chat", "--prompt", prompt];
+  return [
+    "agent",
+    "launch",
+    "--agent",
+    bot.harness,
+    "--worktree",
+    `path:${bot.folder}`,
+    "--surface",
+    "chat",
+    "--prompt",
+    prompt,
+  ];
 }
