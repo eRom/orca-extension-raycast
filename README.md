@@ -8,7 +8,7 @@ Control Orca from Raycast without leaving what you are doing. The extension call
 
 ## Requirements
 
-- macOS with Raycast and Orca (&gt;= 1.4.269) installed.
+- macOS with [Raycast](https://www.raycast.com/) and [Orca](https://orca.dev/) (&gt;= 1.4.269) installed.
 
 ## Commands
 
