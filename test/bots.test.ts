@@ -103,9 +103,22 @@ describe("launchArgs", () => {
       "path:/h/.orca/bots/test",
       "--surface",
       "chat",
-      "--prompt",
-      "Réponds juste: pong",
+      "--prompt=Réponds juste: pong",
     ]);
+  });
+
+  // Le parseur d'Orca prend le jeton suivant `--prompt` pour un flag s'il commence par `--` :
+  // seule la forme `--prompt=<valeur>` en un seul argument est sûre.
+  test("launchArgs keeps a prompt starting with -- in a single --prompt= argument", () => {
+    const prompt = "---\ntitle: x\n---";
+    const args = launchArgs(makeBot({}), prompt);
+    expect(args.at(-1)).toBe(`--prompt=${prompt}`);
+    expect(args).not.toContain("--prompt");
+    expect(args).not.toContain(prompt);
+  });
+
+  test("launchArgs keeps equals signs of the prompt intact", () => {
+    expect(launchArgs(makeBot({}), "a=b").at(-1)).toBe("--prompt=a=b");
   });
 
   test("launchArgs never includes --focus", () => {

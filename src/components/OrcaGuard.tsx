@@ -3,7 +3,7 @@ import { usePromise } from "@raycast/utils";
 import type { ReactNode } from "react";
 import { OrcaCliError, runOrca } from "../lib/orca-cli";
 import { getOrcaPath } from "../lib/preferences";
-import { parseStatus } from "../lib/status";
+import { isOrcaDown, parseStatus } from "../lib/status";
 
 export const ORCA_APP_PATH = "/Applications/Orca.app";
 
@@ -19,7 +19,10 @@ export function OrcaGuard({ children }: { children: ReactNode }) {
     { onError: () => {} },
   );
 
-  if (error) {
+  // Orca planté (`runtime_unavailable`) revient à « pas lancé » : même copie, même action.
+  const notRunning = isOrcaDown(data, error);
+
+  if (error && !notRunning) {
     if (error instanceof OrcaCliError && error.code === "binary_not_found") {
       return (
         <List>
@@ -43,7 +46,7 @@ export function OrcaGuard({ children }: { children: ReactNode }) {
     );
   }
 
-  if (data && !data.running) {
+  if (notRunning) {
     return (
       <List>
         <List.EmptyView

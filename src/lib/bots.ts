@@ -106,7 +106,8 @@ export function launchArgs(bot: Bot, prompt: string): string[] {
     `path:${bot.folder}`,
     "--surface",
     "chat",
-    "--prompt",
-    prompt,
+    // Forme `--prompt=<valeur>` en un seul argument : le parseur d'Orca prendrait sinon
+    // un prompt commençant par `--` pour un autre flag (« Unknown flag »).
+    `--prompt=${prompt}`,
   ];
 }
