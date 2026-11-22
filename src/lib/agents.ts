@@ -38,6 +38,16 @@ const TITLE_MAX_LENGTH = 80;
 const TERMINAL_PREFIX = "term_";
 const CHAT_PREFIX = "orca_session_id:";
 
+/** Orca tronque l'aperçu du dernier message à 200 caractères : à ce seuil, on marque la coupure. */
+const PREVIEW_MAX_LENGTH = 200;
+
+const previewOf = (message: string): string | null => {
+  if (message === "") {
+    return null;
+  }
+  return message.length >= PREVIEW_MAX_LENGTH ? `${message}…` : message;
+};
+
 /** `blocked` et `waiting` attendent Romain, `done` est terminé, tout le reste (dont une valeur future) reste visible en cours. */
 export function sectionOf(state: string): AgentSection {
   if (state === "blocked" || state === "waiting") {
@@ -147,7 +157,7 @@ export function parseOpenAgents(result: unknown): OpenAgent[] {
         ),
         subtitle: subtitleOf({ bot, repo, displayName: workspace }),
         lastPrompt: asString(agent.prompt).trim() !== "" ? asString(agent.prompt) : null,
-        lastMessage: asString(agent.lastAssistantMessage) || null,
+        lastMessage: previewOf(asString(agent.lastAssistantMessage)),
         stateSince: asNumber(agent.stateStartedAt),
         updatedAt: asNumber(agent.updatedAt) ?? 0,
         repo,

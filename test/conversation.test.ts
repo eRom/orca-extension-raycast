@@ -1,7 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { type Conversation, isAnswered, latestError, latestReply, parseConversation } from "../src/lib/conversation";
+import {
+  type Conversation,
+  isAnswered,
+  latestError,
+  latestReply,
+  mergeFragments,
+  parseConversation,
+} from "../src/lib/conversation";
 
 const loadResult = (name: string): unknown =>
   JSON.parse(readFileSync(join(__dirname, "fixtures", name), "utf8")).result;
@@ -60,7 +67,7 @@ describe("parseConversation", () => {
 
   test("tolerates unexpected shapes", () => {
     for (const value of [null, undefined, 42, "x", {}, { entries: "nope" }]) {
-      expect(parseConversation(value)).toEqual({ state: "unknown", entries: [] });
+      expect(parseConversation(value)).toEqual({ state: "unknown", entries: [], limited: false });
     }
   });
 
@@ -90,6 +97,7 @@ describe("latestError", () => {
   test("returns the error text when the last entry after the user message is an error", () => {
     const conv: Conversation = {
       state: "done",
+      limited: false,
       entries: [
         { role: "user", text: "q" },
         { role: "error", text: "rate limited" },
@@ -102,6 +110,7 @@ describe("latestError", () => {
   test("an error followed by a reply is not the outcome", () => {
     const conv: Conversation = {
       state: "done",
+      limited: false,
       entries: [
         { role: "user", text: "q" },
         { role: "error", text: "transient" },
@@ -115,6 +124,7 @@ describe("latestError", () => {
   test("a reply followed by an error is not a clean answer", () => {
     const conv: Conversation = {
       state: "done",
+      limited: false,
       entries: [
         { role: "user", text: "q" },
         { role: "assistant", text: "partial" },
@@ -128,6 +138,7 @@ describe("latestError", () => {
   test("an error before the last user message is ignored", () => {
     const conv: Conversation = {
       state: "working",
+      limited: false,
       entries: [
         { role: "user", text: "first" },
         { role: "error", text: "old" },
@@ -142,6 +153,7 @@ describe("latestReply", () => {
   test("reply before the last user message is not the answer", () => {
     const conv: Conversation = {
       state: "done",
+      limited: false,
       entries: [
         { role: "user", text: "first" },
         { role: "assistant", text: "old" },
@@ -155,6 +167,7 @@ describe("latestReply", () => {
   test("returns the last assistant entry after the last user entry", () => {
     const conv: Conversation = {
       state: "done",
+      limited: false,
       entries: [
         { role: "user", text: "first" },
         { role: "assistant", text: "old" },
@@ -167,7 +180,56 @@ describe("latestReply", () => {
   });
 
   test("a done state without any assistant entry is not answered", () => {
-    const conv: Conversation = { state: "done", entries: [{ role: "user", text: "q" }] };
+    const conv: Conversation = { state: "done", entries: [{ role: "user", text: "q" }], limited: false };
     expect(isAnswered(conv)).toBe(false);
+  });
+});
+
+describe("limited flag", () => {
+  test("parseConversation exposes limited from the CLI response", () => {
+    expect(parseConversation({ state: "done", entries: [], limited: true }).limited).toBe(true);
+    expect(parseConversation({ state: "done", entries: [], limited: false }).limited).toBe(false);
+    expect(parseConversation({ state: "done", entries: [] }).limited).toBe(false);
+    expect(parseConversation(loadResult("agent-read-done.json")).limited).toBe(false);
+  });
+});
+
+describe("mergeFragments", () => {
+  test("merges consecutive entries of the same role under one block", () => {
+    const merged = mergeFragments([
+      { role: "user", text: "q" },
+      { role: "assistant", text: "part one" },
+      { role: "assistant", text: "part two" },
+      { role: "error", text: "boom" },
+      { role: "assistant", text: "retry" },
+    ]);
+    expect(merged).toEqual([
+      { role: "user", text: "q" },
+      { role: "assistant", text: "part one\n\npart two" },
+      { role: "error", text: "boom" },
+      { role: "assistant", text: "retry" },
+    ]);
+  });
+
+  test("keeps consecutive errors as separate entries", () => {
+    expect(
+      mergeFragments([
+        { role: "error", text: "first" },
+        { role: "error", text: "second" },
+      ]),
+    ).toHaveLength(2);
+  });
+
+  test("does not mutate its input and handles an empty list", () => {
+    const input = [
+      { role: "assistant", text: "a" },
+      { role: "assistant", text: "b" },
+    ];
+    mergeFragments(input);
+    expect(input).toEqual([
+      { role: "assistant", text: "a" },
+      { role: "assistant", text: "b" },
+    ]);
+    expect(mergeFragments([])).toEqual([]);
   });
 });

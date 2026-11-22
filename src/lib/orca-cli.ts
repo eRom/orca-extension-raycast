@@ -8,7 +8,7 @@ const MAX_BUFFER_BYTES = 10 * 1024 * 1024;
 
 /**
  * Erreur typée de la CLI Orca.
- * Codes internes : `binary_not_found`, `invalid_output`, `timeout`.
+ * Codes internes : `binary_not_found` (absent, non exécutable ou dossier), `invalid_output`, `timeout`.
  * Sinon, le `error.code` renvoyé par Orca dans son enveloppe.
  */
 export class OrcaCliError extends Error {
@@ -87,7 +87,8 @@ export function runOrca<T>(args: string[], options: RunOptions = {}): Promise<T>
       (error, stdout, stderr) => {
         if (error) {
           const failure = error as ExecFailure;
-          if (failure.code === "ENOENT") {
+          // Chemin absent, non exécutable (EACCES) ou dossier (EISDIR) : même état « CLI introuvable ».
+          if (failure.code === "ENOENT" || failure.code === "EACCES" || failure.code === "EISDIR") {
             reject(binaryMissing);
             return;
           }

@@ -7,17 +7,17 @@ import {
   List,
   Toast,
   closeMainWindow,
-  open,
   showToast,
   useNavigation,
 } from "@raycast/api";
 import { useCachedPromise } from "@raycast/utils";
 import { useEffect } from "react";
 import { ConversationView } from "./components/ConversationView";
-import { ORCA_APP_PATH, OrcaGuard } from "./components/OrcaGuard";
+import { OrcaGuard, openOrca } from "./components/OrcaGuard";
 import { type AgentSection, type OpenAgent, groupBySection, parseOpenAgents } from "./lib/agents";
 import { runOrca } from "./lib/orca-cli";
 import { getOrcaPath } from "./lib/preferences";
+import { quote } from "./lib/markdown";
 import { formatSince } from "./lib/time";
 
 const REFRESH_INTERVAL_MS = 5_000;
@@ -39,12 +39,6 @@ async function fetchOpenAgents(): Promise<OpenAgent[]> {
   return parseOpenAgents(await runOrca<unknown>(["worktree", "ps"], { orcaPath: getOrcaPath() }));
 }
 
-const quote = (text: string): string =>
-  text
-    .split("\n")
-    .map((line) => `> ${line}`)
-    .join("\n");
-
 /** Markdown du panneau de détail : chaque section n'apparaît que si elle a du contenu. */
 function detailMarkdown(agent: OpenAgent): string {
   const sections: string[] = [];
@@ -61,14 +55,17 @@ function detailMarkdown(agent: OpenAgent): string {
 async function goToTerminal(handle: string): Promise<void> {
   try {
     await runOrca(["terminal", "switch", "--terminal", handle], { orcaPath: getOrcaPath() });
-    await open(ORCA_APP_PATH);
-    await closeMainWindow();
   } catch (error) {
     await showToast({
       style: Toast.Style.Failure,
       title: "Impossible d'ouvrir ce terminal",
       message: error instanceof Error ? error.message : String(error),
     });
+    return;
+  }
+  // Un échec d'ouverture d'Orca affiche son propre toast ; la fenêtre Raycast reste alors ouverte.
+  if (await openOrca()) {
+    await closeMainWindow();
   }
 }
 
@@ -76,14 +73,17 @@ function AgentItem({ agent, onRefresh }: { agent: OpenAgent; onRefresh: () => vo
   const { push } = useNavigation();
 
   const readConversation = () =>
-    push(<ConversationView sessionId={agent.sessionId} title={agent.title} harness={agent.harness} />);
+    push(<ConversationView sessionId={agent.sessionId} title={agent.title} bot={agent.bot} harness={agent.harness} />);
   const stateLabel = STATE_LABELS[agent.state] ?? (agent.state || "inconnu");
   const since = agent.stateSince === null ? null : formatSince(agent.stateSince, Date.now());
   const handle = agent.terminalHandle;
 
   return (
     <List.Item
+      // Identifiant stable : la sélection suit l'agent quand il change de section.
+      id={agent.sessionId}
       title={agent.title}
+      keywords={[agent.repo, agent.workspace, agent.bot ?? "", agent.harness].filter((keyword) => keyword !== "")}
       subtitle={agent.subtitle}
       icon={SECTION_ICONS[agent.section]}
       accessories={[{ tag: agent.harness || "inconnu" }, ...(since === null ? [] : [{ text: since }])]}
@@ -114,7 +114,7 @@ function AgentItem({ agent, onRefresh }: { agent: OpenAgent; onRefresh: () => vo
           ) : (
             <>
               <Action title="Lire la conversation" icon={Icon.Message} onAction={readConversation} />
-              <Action title="Ouvrir Orca" icon={Icon.AppWindow} onAction={() => open(ORCA_APP_PATH)} />
+              <Action title="Ouvrir Orca" icon={Icon.AppWindow} onAction={openOrca} />
             </>
           )}
           <Action.CopyToClipboard

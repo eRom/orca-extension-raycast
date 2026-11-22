@@ -111,3 +111,12 @@ export function launchArgs(bot: Bot, prompt: string): string[] {
     `--prompt=${prompt}`,
   ];
 }
+
+/**
+ * `result.outcome.sessionId` de `orca agent launch`, ou null quand il manque
+ * (repli terminal : le prompt est parti mais aucune session de chat n'est lisible).
+ */
+export function extractSessionId(result: unknown): string | null {
+  const sessionId = asRecord(asRecord(result).outcome).sessionId;
+  return typeof sessionId === "string" && sessionId !== "" ? sessionId : null;
+}

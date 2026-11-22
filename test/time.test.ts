@@ -9,9 +9,9 @@ const HOUR = 60 * MINUTE;
 const since = (elapsedMs: number): string => formatSince(NOW - elapsedMs, NOW);
 
 describe("formatSince", () => {
-  test("stays vague under one minute", () => {
-    expect(since(0)).toBe("depuis quelques s");
-    expect(since(59 * SECOND)).toBe("depuis quelques s");
+  test("says just now under one minute, without a depuis prefix", () => {
+    expect(since(0)).toBe("à l'instant");
+    expect(since(59 * SECOND)).toBe("à l'instant");
   });
 
   test("switches to minutes at 60 s", () => {
@@ -34,6 +34,6 @@ describe("formatSince", () => {
   });
 
   test("treats a start in the future as just now", () => {
-    expect(since(-5 * MINUTE)).toBe("depuis quelques s");
+    expect(since(-5 * MINUTE)).toBe("à l'instant");
   });
 });

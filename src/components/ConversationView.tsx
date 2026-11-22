@@ -1,6 +1,7 @@
 import { Action, ActionPanel, Detail, Icon, Keyboard, Toast, showToast } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
-import { type Conversation, parseConversation } from "../lib/conversation";
+import { type Conversation, mergeFragments, parseConversation } from "../lib/conversation";
+import { quote } from "../lib/markdown";
 import { runOrca } from "../lib/orca-cli";
 import { getOrcaPath } from "../lib/preferences";
 
@@ -11,7 +12,9 @@ type Props = {
   sessionId: string;
   /** Titre de navigation de la vue. */
   title: string;
-  /** Nom du harness de l'agent, utilisé comme en-tête de ses messages ; « Agent » s'il est vide ou absent. */
+  /** Nom du bot quand l'agent est un chat de bot : il sert d'en-tête à ses messages, avant le harness. */
+  bot?: string | null;
+  /** Nom du harness de l'agent, en-tête de ses messages à défaut de bot ; « Agent » s'il est vide ou absent. */
   harness?: string;
 };
 
@@ -34,17 +37,18 @@ function lastAgentMessage(conversation: Conversation): string | null {
 function toMarkdown(conversation: Conversation, authorName: string): string {
   const blocks = conversation.entries.map((entry) => {
     if (entry.role === "error") {
-      return `**Erreur**\n\n${entry.text}`;
+      return `**Erreur**\n\n${quote(entry.text)}`;
     }
     return `**${entry.role === "user" ? "Toi" : authorName}**\n\n${entry.text}`;
   });
   if (conversation.state === "working") {
     blocks.push("*En cours…*");
   }
-  return blocks.join("\n\n---\n\n");
+  const text = blocks.join("\n\n---\n\n");
+  return conversation.limited ? `*Seuls les ${ENTRY_LIMIT} derniers messages sont affichés.*\n\n${text}` : text;
 }
 
-export function ConversationView({ sessionId, title, harness }: Props) {
+export function ConversationView({ sessionId, title, bot, harness }: Props) {
   // Le hook annule la mise à jour d'état au démontage : aucune lecture ne touche une vue fermée.
   const { data, isLoading, error, revalidate } = usePromise(readConversation, [sessionId], {
     // Toast en français à la place de celui, anglais, de Raycast.
@@ -56,14 +60,16 @@ export function ConversationView({ sessionId, title, harness }: Props) {
       }),
   });
 
-  const authorName = harness?.trim() ? harness.trim() : FALLBACK_AUTHOR;
-  const lastMessage = data ? lastAgentMessage(data) : null;
+  const authorName = bot?.trim() || harness?.trim() || FALLBACK_AUTHOR;
+  // Les fragments consécutifs d'un même rôle passent sous un seul en-tête.
+  const view = data ? { ...data, entries: mergeFragments(data.entries) } : undefined;
+  const lastMessage = view ? lastAgentMessage(view) : null;
 
   let markdown: string;
-  if (data) {
-    markdown = data.entries.length > 0 || data.state === "working" ? toMarkdown(data, authorName) : "*Aucun message.*";
+  if (view) {
+    markdown = view.entries.length > 0 || view.state === "working" ? toMarkdown(view, authorName) : "*Aucun message.*";
   } else if (error) {
-    markdown = `*Impossible de lire la conversation : ${error.message}*`;
+    markdown = quote(`Impossible de lire la conversation : ${error.message}`);
   } else {
     markdown = "";
   }

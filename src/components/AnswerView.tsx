@@ -1,14 +1,17 @@
 import { Action, ActionPanel, Detail, Icon, Keyboard, Toast, showToast } from "@raycast/api";
 import { useEffect, useRef, useState } from "react";
-import { type Bot, launchArgs } from "../lib/bots";
+import { type Bot, extractSessionId, launchArgs } from "../lib/bots";
 import { type Conversation, isAnswered, latestError, latestReply, parseConversation } from "../lib/conversation";
+import { quote } from "../lib/markdown";
 import { OrcaCliError, runOrca } from "../lib/orca-cli";
 import { getOrcaPath } from "../lib/preferences";
 
 const POLL_INTERVAL_MS = 1_500;
 const MAX_WAIT_MS = 10 * 60 * 1_000;
+/** Échecs de lecture consécutifs tolérés avant d'abandonner (un hoquet de la CLI ne doit pas tuer l'attente). */
+const MAX_READ_FAILURES = 3;
 
-type Phase = "waiting" | "answered" | "ended" | "timeout" | "error";
+type Phase = "waiting" | "answered" | "ended" | "terminal" | "timeout" | "error";
 
 type Props = {
   bot: Bot;
@@ -17,25 +20,13 @@ type Props = {
   onAskAgain?: () => void;
 };
 
-/** `result.outcome.sessionId` de `orca agent launch`, ou une erreur typée si la réponse est inattendue. */
-function extractSessionId(result: unknown): string {
-  const outcome = (result as { outcome?: { sessionId?: unknown } } | null)?.outcome;
-  if (typeof outcome?.sessionId === "string" && outcome.sessionId) {
-    return outcome.sessionId;
-  }
-  throw new OrcaCliError("invalid_output", "Orca n'a pas renvoyé d'identifiant de session pour ce prompt.");
-}
-
-/** Lance le prompt sans jamais mettre Orca au premier plan (pas de --focus) et renvoie l'ID de session. */
-async function launchPrompt(bot: Bot, prompt: string): Promise<string> {
+/**
+ * Lance le prompt sans jamais mettre Orca au premier plan (pas de --focus) et renvoie l'ID de session.
+ * `null` : le lancement a réussi mais sans session de chat lisible (repli terminal).
+ */
+async function launchPrompt(bot: Bot, prompt: string): Promise<string | null> {
   return extractSessionId(await runOrca<unknown>(launchArgs(bot, prompt), { orcaPath: getOrcaPath() }));
 }
-
-const quote = (text: string): string =>
-  text
-    .split("\n")
-    .map((line) => `> ${line}`)
-    .join("\n");
 
 const describeError = (error: unknown): string =>
   error instanceof OrcaCliError
@@ -51,14 +42,17 @@ export function AnswerView({ bot, prompt, onAskAgain }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   // Erreur remontée par le bot lui-même (entrée `error` de la conversation).
   const [botError, setBotError] = useState<string | null>(null);
+  // Incrémenté par « Relire la réponse » : rejoue la lecture sur la même session, sans relancer le prompt.
+  const [attempt, setAttempt] = useState(0);
 
-  // Une seule sollicitation par montage, même si l'effet est rejoué (double montage React).
-  const launchRef = useRef<Promise<string> | null>(null);
+  // Une seule sollicitation par montage, même si l'effet est rejoué (double montage React, relecture).
+  const launchRef = useRef<Promise<string | null> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const startedAt = Date.now();
+    let readFailures = 0;
 
     const fail = (title: string, error: unknown) => {
       if (cancelled) return;
@@ -72,8 +66,15 @@ export function AnswerView({ bot, prompt, onAskAgain }: Props) {
       let conversation: Conversation;
       try {
         conversation = parseConversation(await runOrca<unknown>(["agent", "read", id], { orcaPath: getOrcaPath() }));
+        readFailures = 0;
       } catch (error) {
-        fail("Impossible de lire la réponse", error);
+        if (cancelled) return;
+        readFailures += 1;
+        if (readFailures >= MAX_READ_FAILURES) {
+          fail("Impossible de lire la réponse", error);
+          return;
+        }
+        timer = setTimeout(() => void poll(id), POLL_INTERVAL_MS);
         return;
       }
       if (cancelled) return;
@@ -83,8 +84,7 @@ export function AnswerView({ bot, prompt, onAskAgain }: Props) {
         setPhase("answered");
         return;
       }
-      const botError = latestError(conversation);
-      setBotError(botError);
+      setBotError(latestError(conversation));
       // Tour terminé sans réponse exploitable : inutile d'attendre davantage.
       if (conversation.state === "done") {
         setPhase("ended");
@@ -101,6 +101,10 @@ export function AnswerView({ bot, prompt, onAskAgain }: Props) {
     launchRef.current.then(
       (id) => {
         if (cancelled) return;
+        if (id === null) {
+          setPhase("terminal");
+          return;
+        }
         setSessionId(id);
         void poll(id);
       },
@@ -111,27 +115,38 @@ export function AnswerView({ bot, prompt, onAskAgain }: Props) {
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, []);
+  }, [attempt]);
+
+  const reread = () => {
+    setErrorMessage(null);
+    setPhase("waiting");
+    setAttempt((current) => current + 1);
+  };
 
   let body: string;
   switch (phase) {
     case "answered":
       body = reply ?? "";
       break;
-    case "timeout":
-      body = `*Toujours en cours. La réponse arrivera dans les chats de ${bot.name} dans Orca.*`;
-      break;
-    case "error":
-      body = `*Échec : ${errorMessage ?? "erreur inconnue"}*`;
-      break;
     case "ended":
       body = botError
         ? `**Erreur**\n\n${quote(botError)}`
         : `*${bot.name} n'a pas répondu. Ouvre ses chats dans Orca pour voir ce qui s'est passé.*`;
       break;
+    case "terminal":
+      body = `*Le prompt est parti, mais ${bot.name} tourne dans un terminal : sa réponse sera dans Orca.*`;
+      break;
+    case "timeout":
+      body = `*Toujours en cours. La réponse arrivera dans les chats de ${bot.name} dans Orca.*`;
+      break;
+    case "error":
+      body = quote(`Échec : ${errorMessage ?? "erreur inconnue"}`);
+      break;
     default:
       body = botError ? `**Erreur**\n\n${quote(botError)}` : `*${bot.name} réfléchit…*`;
   }
+
+  const canReread = sessionId !== null && (phase === "error" || phase === "timeout");
 
   return (
     <Detail
@@ -146,6 +161,7 @@ export function AnswerView({ bot, prompt, onAskAgain }: Props) {
               <Action.Paste title="Coller la réponse" content={reply} />
             </>
           )}
+          {canReread && <Action title="Relire la réponse" icon={Icon.ArrowClockwise} onAction={reread} />}
           {sessionId && (
             <Action.CopyToClipboard
               title="Copier l'ID de session"

@@ -79,6 +79,21 @@ describe("runOrca", () => {
     expect((error as OrcaCliError).code).toBe("binary_not_found");
   });
 
+  test("runOrca reports binary_not_found for a file that is not executable", async () => {
+    const path = join(scriptDir, "not-executable");
+    writeFileSync(path, "#!/bin/sh\nexit 0\n");
+    chmodSync(path, 0o644);
+    const error = await rejectionOf(runOrca(["status"], { orcaPath: path }));
+    expect(error).toBeInstanceOf(OrcaCliError);
+    expect((error as OrcaCliError).code).toBe("binary_not_found");
+  });
+
+  test("runOrca reports binary_not_found when the path is a directory", async () => {
+    const error = await rejectionOf(runOrca(["status"], { orcaPath: scriptDir }));
+    expect(error).toBeInstanceOf(OrcaCliError);
+    expect((error as OrcaCliError).code).toBe("binary_not_found");
+  });
+
   test("runOrca appends --json and returns the envelope result", async () => {
     const orcaPath = makeFakeOrca("echo-args", `printf '{"ok":true,"result":{"args":"%s"}}' "$*"`);
     const result = await runOrca<{ args: string }>(["bot", "list"], { orcaPath });

@@ -130,6 +130,18 @@ describe("parseOpenAgents", () => {
     expect(agents.map((agent) => agent.title)).toEqual(["Quelle heure ?", "Et la météo ?"]);
   });
 
+  // Orca tronque l'aperçu à 200 caractères : au-delà du seuil, on signale la coupure par « … ».
+  test("a last message at the 200 character preview limit is marked as truncated", () => {
+    const [short, atLimit] = parseOpenAgents(
+      psWith({}, [
+        { address: "term_1", state: "done", lastAssistantMessage: "a".repeat(199) },
+        { address: "term_2", state: "done", lastAssistantMessage: "b".repeat(200) },
+      ]),
+    );
+    expect(short.lastMessage).toBe("a".repeat(199));
+    expect(atLimit.lastMessage).toBe(`${"b".repeat(200)}…`);
+  });
+
   test("a missing state is kept and filed in running", () => {
     const [agent] = parseOpenAgents(psWith({}, [{ address: "term_1" }]));
     expect(agent.section).toBe("running");

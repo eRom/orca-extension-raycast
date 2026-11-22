@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { OrcaCliError } from "../src/lib/orca-cli";
-import { type Bot, launchArgs, parseBotList, readBotFolders, sortBots } from "../src/lib/bots";
+import { type Bot, extractSessionId, launchArgs, parseBotList, readBotFolders, sortBots } from "../src/lib/bots";
 
 const makeBot = (overrides: Partial<Bot>): Bot => ({
   id: "id",
@@ -78,7 +78,11 @@ describe("sortBots", () => {
   });
 
   test("sortBots orders alphabetically without a last used bot and does not mutate its input", () => {
-    const input = [makeBot({ id: "z", name: "Zoé" }), makeBot({ id: "e", name: "Émile" }), makeBot({ id: "a", name: "Alice" })];
+    const input = [
+      makeBot({ id: "z", name: "Zoé" }),
+      makeBot({ id: "e", name: "Émile" }),
+      makeBot({ id: "a", name: "Alice" }),
+    ];
     const snapshot = input.map((bot) => bot.id);
     expect(sortBots(input).map((bot) => bot.id)).toEqual(["a", "e", "z"]);
     expect(input.map((bot) => bot.id)).toEqual(snapshot);
@@ -136,5 +140,20 @@ describe("launchArgs", () => {
     expect(caught).toBeInstanceOf(OrcaCliError);
     expect((caught as OrcaCliError).code).toBe("bot_folder_missing");
     expect((caught as OrcaCliError).message.length).toBeGreaterThan(0);
+  });
+});
+
+describe("extractSessionId", () => {
+  test("extractSessionId reads outcome.sessionId from the captured launch", () => {
+    const envelope = JSON.parse(readFileSync(join(__dirname, "fixtures", "agent-launch.json"), "utf8"));
+    expect(extractSessionId(envelope.result)).toBe("d9359b2d-b91a-4794-8475-6948bcd54004");
+  });
+
+  // Fixture synthétique : repli terminal, `outcome` sans `sessionId`.
+  test("extractSessionId returns null for a terminal fallback or unexpected shapes", () => {
+    expect(extractSessionId({ outcome: { kind: "terminal", handle: "term_1" } })).toBeNull();
+    for (const value of [null, undefined, 42, "x", {}, { outcome: null }, { outcome: { sessionId: "" } }]) {
+      expect(extractSessionId(value)).toBeNull();
+    }
   });
 });

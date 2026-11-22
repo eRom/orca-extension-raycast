@@ -1,4 +1,4 @@
-import { Action, ActionPanel, Icon, List, open, openExtensionPreferences } from "@raycast/api";
+import { Action, ActionPanel, Icon, List, Toast, open, openExtensionPreferences, showToast } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
 import type { ReactNode } from "react";
 import { OrcaCliError, runOrca } from "../lib/orca-cli";
@@ -6,6 +6,21 @@ import { getOrcaPath } from "../lib/preferences";
 import { isOrcaDown, parseStatus } from "../lib/status";
 
 export const ORCA_APP_PATH = "/Applications/Orca.app";
+
+/** Ouvre Orca au premier plan ; un échec devient un toast français et renvoie false, jamais une exception. */
+export async function openOrca(): Promise<boolean> {
+  try {
+    await open(ORCA_APP_PATH);
+    return true;
+  } catch (error) {
+    await showToast({
+      style: Toast.Style.Failure,
+      title: "Impossible d'ouvrir Orca",
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return false;
+  }
+}
 
 /**
  * Vérifie qu'Orca est joignable avant d'afficher la commande.
@@ -55,7 +70,7 @@ export function OrcaGuard({ children }: { children: ReactNode }) {
           description="Lance Orca pour parler à tes bots et voir tes agents."
           actions={
             <ActionPanel>
-              <Action title="Lancer Orca" icon={Icon.Play} onAction={() => open(ORCA_APP_PATH)} />
+              <Action title="Lancer Orca" icon={Icon.Play} onAction={openOrca} />
             </ActionPanel>
           }
         />

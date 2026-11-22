@@ -4,7 +4,8 @@ export type TurnState = "done" | "working" | "unknown";
 /** `role` vaut `user`, `assistant`, ou `error` pour une entrée d'erreur de la CLI. */
 export type Entry = { role: "user" | "assistant" | "error" | string; text: string };
 
-export type Conversation = { state: TurnState; entries: Entry[] };
+/** `limited` : la CLI a omis ou raccourci une partie de la conversation. */
+export type Conversation = { state: TurnState; entries: Entry[]; limited: boolean };
 
 const NO_ERROR_DETAIL = "Erreur sans détail.";
 
@@ -39,7 +40,7 @@ export function parseConversation(result: unknown): Conversation {
     entries.push({ role: typeof record.role === "string" ? record.role : "", text: record.text });
   }
 
-  return { state: asTurnState(root.state), entries };
+  return { state: asTurnState(root.state), entries, limited: root.limited === true };
 }
 
 /** Texte de la dernière entrée `assistant` placée après la dernière entrée `user`, sinon null. */
@@ -65,4 +66,18 @@ export function latestError(conv: Conversation): string | null {
 /** Le bot a répondu quand le tour est terminé, qu'une réponse suit le dernier message utilisateur et qu'aucune erreur ne clôt l'échange. */
 export function isAnswered(conv: Conversation): boolean {
   return conv.state === "done" && latestReply(conv) !== null && latestError(conv) === null;
+}
+
+/** Fusionne les entrées consécutives de même rôle en une seule (les fragments d'une même réponse), sans modifier l'entrée. */
+export function mergeFragments(entries: Entry[]): Entry[] {
+  const merged: Entry[] = [];
+  for (const entry of entries) {
+    const previous = merged[merged.length - 1];
+    if (previous !== undefined && previous.role === entry.role && entry.role !== "error") {
+      merged[merged.length - 1] = { role: previous.role, text: `${previous.text}\n\n${entry.text}` };
+    } else {
+      merged.push({ ...entry });
+    }
+  }
+  return merged;
 }

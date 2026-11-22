@@ -11,6 +11,7 @@ import {
   useNavigation,
 } from "@raycast/api";
 import { useForm, usePromise } from "@raycast/utils";
+import { useRef } from "react";
 import { AnswerView } from "./components/AnswerView";
 import { OrcaGuard } from "./components/OrcaGuard";
 import { type Bot, parseBotList, readBotFolders, sortBots } from "./lib/bots";
@@ -21,17 +22,37 @@ const LAST_BOT_KEY = "lastBotId";
 
 async function loadBots(): Promise<Bot[]> {
   const result = await runOrca<unknown>(["bot", "list"], { orcaPath: getOrcaPath() });
-  const lastUsedId = await LocalStorage.getItem<string>(LAST_BOT_KEY);
+  // Le dernier bot utilisé n'est qu'un confort : un stockage local en panne ne bloque pas la liste.
+  let lastUsedId: string | undefined;
+  try {
+    lastUsedId = await LocalStorage.getItem<string>(LAST_BOT_KEY);
+  } catch {
+    lastUsedId = undefined;
+  }
   return sortBots(parseBotList(result, readBotFolders()), lastUsedId);
 }
 
 function PromptForm({ bot }: { bot: Bot }) {
   const { push } = useNavigation();
+  // Garde contre le double envoi : deux validations rapprochées lanceraient deux fois le prompt.
+  const isSubmitting = useRef(false);
 
   const { handleSubmit, itemProps } = useForm<{ prompt: string }>({
     onSubmit: async ({ prompt }) => {
-      await LocalStorage.setItem(LAST_BOT_KEY, bot.id);
-      push(<AnswerView bot={bot} prompt={prompt} onAskAgain={() => push(<PromptForm bot={bot} />)} />);
+      if (isSubmitting.current) {
+        return;
+      }
+      isSubmitting.current = true;
+      try {
+        try {
+          await LocalStorage.setItem(LAST_BOT_KEY, bot.id);
+        } catch {
+          // Mémoriser le dernier bot est facultatif : on envoie le prompt quand même.
+        }
+        push(<AnswerView bot={bot} prompt={prompt} onAskAgain={() => push(<PromptForm bot={bot} />)} />);
+      } finally {
+        isSubmitting.current = false;
+      }
     },
     validation: {
       prompt: (value) => (value?.trim() ? undefined : "Écris un prompt pour ce bot."),
