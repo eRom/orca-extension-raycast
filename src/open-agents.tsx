@@ -10,7 +10,7 @@ import {
   showToast,
   useNavigation,
 } from "@raycast/api";
-import { useCachedPromise } from "@raycast/utils";
+import { useCachedPromise, useCachedState } from "@raycast/utils";
 import { useEffect } from "react";
 import { ConversationView } from "./components/ConversationView";
 import { OrcaGuard, openOrca } from "./components/OrcaGuard";
@@ -69,7 +69,16 @@ async function goToTerminal(handle: string): Promise<void> {
   }
 }
 
-function AgentItem({ agent, onRefresh }: { agent: OpenAgent; onRefresh: () => void }) {
+const TOGGLE_DETAIL_SHORTCUT: Keyboard.Shortcut = { modifiers: ["cmd"], key: "d" };
+
+type AgentItemProps = {
+  agent: OpenAgent;
+  onRefresh: () => void;
+  showingDetail: boolean;
+  onToggleDetail: () => void;
+};
+
+function AgentItem({ agent, onRefresh, showingDetail, onToggleDetail }: AgentItemProps) {
   const { push } = useNavigation();
 
   const readConversation = () =>
@@ -84,9 +93,13 @@ function AgentItem({ agent, onRefresh }: { agent: OpenAgent; onRefresh: () => vo
       id={agent.sessionId}
       title={agent.title}
       keywords={[agent.repo, agent.workspace, agent.bot ?? "", agent.harness].filter((keyword) => keyword !== "")}
-      subtitle={agent.subtitle}
+      // Avec le panneau de détail, la liste n'a que la moitié de la largeur : on n'y garde que le titre,
+      // le reste est dans les métadonnées du détail.
+      subtitle={showingDetail ? undefined : agent.subtitle}
       icon={SECTION_ICONS[agent.section]}
-      accessories={[{ tag: agent.harness || "inconnu" }, ...(since === null ? [] : [{ text: since }])]}
+      accessories={
+        showingDetail ? [] : [{ tag: agent.harness || "inconnu" }, ...(since === null ? [] : [{ text: since }])]
+      }
       detail={
         <List.Item.Detail
           markdown={detailMarkdown(agent)}
@@ -117,6 +130,12 @@ function AgentItem({ agent, onRefresh }: { agent: OpenAgent; onRefresh: () => vo
               <Action title="Ouvrir Orca" icon={Icon.AppWindow} onAction={openOrca} />
             </>
           )}
+          <Action
+            title={showingDetail ? "Masquer les détails" : "Afficher les détails"}
+            icon={Icon.Sidebar}
+            shortcut={TOGGLE_DETAIL_SHORTCUT}
+            onAction={onToggleDetail}
+          />
           <Action.CopyToClipboard
             title="Copier l'ID de session"
             content={agent.sessionId}
@@ -150,6 +169,10 @@ function AgentList() {
       }),
   });
 
+  // Liste pleine largeur par défaut ; le choix du détail est mémorisé entre deux ouvertures.
+  const [showingDetail, setShowingDetail] = useCachedState("showingDetail", false);
+  const toggleDetail = () => setShowingDetail((current) => !current);
+
   // Rafraîchissement périodique ; les données en cache restent affichées pendant la relecture, donc pas de clignotement.
   useEffect(() => {
     const timer = setInterval(() => revalidate(), REFRESH_INTERVAL_MS);
@@ -158,7 +181,11 @@ function AgentList() {
 
   return (
     // Chargement visible au premier fetch seulement : sinon la barre clignote à chaque rafraîchissement de 5 s.
-    <List isLoading={isLoading && agents === undefined} isShowingDetail searchBarPlaceholder="Chercher un agent">
+    <List
+      isLoading={isLoading && agents === undefined}
+      isShowingDetail={showingDetail}
+      searchBarPlaceholder="Chercher un agent"
+    >
       {error && agents === undefined ? (
         <List.EmptyView icon={Icon.Warning} title="Impossible de lister les agents" description={error.message} />
       ) : agents !== undefined && agents.length === 0 ? (
@@ -171,7 +198,13 @@ function AgentList() {
       {groupBySection(agents ?? []).map((group) => (
         <List.Section key={group.section} title={group.title}>
           {group.agents.map((agent) => (
-            <AgentItem key={agent.sessionId} agent={agent} onRefresh={revalidate} />
+            <AgentItem
+              key={agent.sessionId}
+              agent={agent}
+              onRefresh={revalidate}
+              showingDetail={showingDetail}
+              onToggleDetail={toggleDetail}
+            />
           ))}
         </List.Section>
       ))}
