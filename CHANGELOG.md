@@ -1,4 +1,4 @@
-# Orca Changelog
+# Orca Bots Changelog
 
 ## [Initial Version] - {PR_MERGE_DATE}
 

@@ -1,8 +1,8 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
-  "name": "orca",
-  "title": "Orca",
-  "description": "Talk to your Orca bots and monitor your agents without leaving what you're doing.",
+  "name": "orca-bots",
+  "title": "Orca Bots",
+  "description": "Unofficial extension to talk to your Orca bots and monitor your agents without leaving what you're doing.",
   "icon": "extension-icon.png",
   "author": "eromleduk",
   "license": "MIT",

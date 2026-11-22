@@ -1,12 +1,14 @@
-# Orca for Raycast
+# Orca Bots for Raycast
 
-![Orca for Raycast](./media/cover.png)
+![Orca Bots for Raycast](./media/cover.png)
 
 Control Orca from Raycast without leaving what you are doing. The extension calls the `orca` CLI so Orca stays in the background, except when you trigger **Go to Terminal**, **Open Orca**, or **Launch Orca**.
 
+> **Unofficial and community-maintained. Not affiliated with, endorsed by or supported by Stably, the makers of Orca.**
+
 ## Requirements
 
-- macOS with Raycast and Orca (`Orca.app`) installed.
+- macOS with Raycast and Orca (&gt;= 1.4.269) installed.
 
 ## Commands
 
