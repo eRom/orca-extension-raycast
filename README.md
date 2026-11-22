@@ -1,5 +1,7 @@
 # Orca for Raycast
 
+![Orca for Raycast](./media/cover.png)
+
 Control Orca from Raycast without leaving what you are doing. The extension calls the `orca` CLI so Orca stays in the background, except when you trigger **Go to Terminal**, **Open Orca**, or **Launch Orca**.
 
 ## Requirements
