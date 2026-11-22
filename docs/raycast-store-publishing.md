@@ -159,29 +159,29 @@ npm run build
 
 ---
 
-## 6. État actuel de `orca-raycast-extension` : écarts à traiter avant soumission
+## 6. État actuel de `orca-raycast-extension` : fait vs à faire
 
-Constat relevé sur le dépôt sans modification du code en cours :
+### Ce qui est fait ✅
 
-### Déjà conforme
-- `package.json` : `$schema`, `name` (`"orca"`), `title` (`"Orca"`), `author` (`"erom"`), `license` (`"MIT"`), `platforms` (`["macOS"]`), `categories` (`["Developer Tools", "Productivity"]`), `@raycast/api` (`2.11.1`) et `@raycast/utils` (`2.3.3`).
-- `eslint.config.js` configuré avec `@raycast/eslint-config`, `.prettierrc` et `tsconfig.json` présents.
-- `assets/extension-icon.png` déjà au bon format (`512 x 512 px` PNG).
-- `.gitignore` exclut `node_modules/`, `dist/` et `raycast-env.d.ts`.
+- ✅ **Manifeste `package.json` validé** : `$schema`, `name` (`"orca"`), `title` (`"Orca"`), `author` (`"eromleduk"`), `license` (`"MIT"`), `platforms` (`["macOS"]`), `categories` (`["Developer Tools", "Productivity"]`), commandes et préférences conformes au Title Case.
+- ✅ **Extension 100 % en US English** : `package.json`, vues et actions dans `src/`, messages d'erreur/durées dans `src/lib/`, `README.md` et tests associés (`bun test` : 90 pass).
+- ✅ **`CHANGELOG.md` initial créé** : placé à la racine avec `## [Initial Version] - {PR_MERGE_DATE}`.
+- ✅ **Screenshots Store prêts (`metadata/`)** : `orca-1.png`, `orca-2.png` et `orca-3.png` au format `2000 x 1250 px` PNG en anglais, validés par `ray lint`.
+- ✅ **Icône & outillage conformes** : `assets/extension-icon.png` (`512 x 512 px` PNG), `eslint.config.js` (`@raycast/eslint-config`), `.prettierrc`, `tsconfig.json`.
+- ✅ **Hygiène Git vérifiée** : `.gitignore` exclut `node_modules/`, `dist/` et `raycast-env.d.ts` (confirmé non suivi par Git).
+- ✅ **Validation locale verte** : `ray lint` (manifeste, icônes, metadata, ESLint, Prettier) et `ray build` passent sans erreur.
+- ✅ **Gestion d'erreurs Orca** : `OrcaGuard` gère `binary_not_found`, `Orca Is Not Responding` et `Orca Is Not Running` en US English avec actions directes (`Open Preferences`, `Launch Orca`).
 
-### À adapter avant d'ouvrir la PR Store
-1. **Passer tout le texte en US English** :
-   - `package.json` (`description`, titres/descriptions de `ask-bot`, `open-agents`, `ask-default-bot`, `arguments`, `preferences`).
-   - Chaînes UI dans `src/` (toasts, placeholders, sections, actions, états vides).
-   - `README.md` (actuellement en français et mentionnant la v1 hors Store).
-2. **Passer sur `npm` pour la soumission** :
-   - Générer `package-lock.json` via `npm install` (en complément ou remplacement de `bun.lock` pour la PR `raycast/extensions`).
-   - Ajouter `"publish": "npx @raycast/api@latest publish"` dans `package.json` -> `scripts`.
-3. **Ajouter les fichiers Store manquants** :
-   - `CHANGELOG.md` à la racine avec `## [Initial Version] - {PR_MERGE_DATE}`.
-   - `metadata/` avec 3 à 6 captures `2000 x 1250 px` réalisées en anglais via Raycast *Capture Window*.
-4. **Nettoyer `raycast-env.d.ts` du suivi Git** :
-   - Le fichier est listé dans `.gitignore` mais actuellement tracké dans le dépôt local ; il ne doit pas être inclus dans la PR vers `raycast/extensions`.
-5. **Documenter et blinder le prérequis Orca** :
-   - Expliquer clairement dans `README.md` comment installer Orca et configurer la CLI si nécessaire.
-   - Vérifier que le cas « Orca absent / fermé » affiche un message utile en anglais avec action directe (préférences ou ouverture d'Orca).
+### Ce qu'il reste à faire avant soumission ⬜
+
+1. **Commiter tes modifications locales en cours** :
+   - `package.json` (`"author": "eromleduk"`) et `metadata/orca-2.png` sont actuellement modifiés dans le working tree.
+2. **Préparer le workflow `npm` pour `raycast/extensions`** :
+   - Générer `package-lock.json` via `npm install` (la CI du Store utilise `npm` et ignore `bun.lock`).
+   - Ajouter `"publish": "npx @raycast/api@latest publish"` dans `package.json` -> `scripts` (ou exécuter directement `npx @raycast/api@latest publish`).
+   - Re-vérifier `npm run lint && npm run build`.
+3. **Vérifier le prérequis Orca en conditions réelles** :
+   - Tester dans Raycast le scénario réel « Orca fermé » et « Orca CLI introuvable » sur le build de production.
+   - Optionnel mais utile pour les reviewers : ajouter dans `README.md` (section `Requirements`) le lien public officiel pour télécharger/installer Orca.
+4. **Ouvrir la Pull Request sur `raycast/extensions`** :
+   - Lancer `npm run publish` (ou `npx @raycast/api@latest publish`), s'authentifier sur GitHub et suivre les retours des Community Managers.
