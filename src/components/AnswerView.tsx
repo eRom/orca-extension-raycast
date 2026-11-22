@@ -1,10 +1,18 @@
-import { Action, ActionPanel, Detail, Icon, Keyboard, Toast, showToast } from "@raycast/api";
+import { Action, ActionPanel, Detail, Icon, Keyboard, Toast, closeMainWindow, showToast } from "@raycast/api";
 import { useEffect, useRef, useState } from "react";
 import { type Bot, extractSessionId, launchArgs } from "../lib/bots";
 import { type Conversation, isAnswered, latestError, latestReply, parseConversation } from "../lib/conversation";
 import { quote } from "../lib/markdown";
 import { OrcaCliError, runOrca } from "../lib/orca-cli";
 import { getOrcaPath } from "../lib/preferences";
+import { openOrca } from "./OrcaGuard";
+
+/** Met Orca au premier plan, puis ferme Raycast ; un échec d'ouverture garde Raycast ouvert avec son toast. */
+async function openOrcaAndClose(): Promise<void> {
+  if (await openOrca()) {
+    await closeMainWindow();
+  }
+}
 
 const POLL_INTERVAL_MS = 1_500;
 const MAX_WAIT_MS = 10 * 60 * 1_000;
@@ -155,6 +163,9 @@ export function AnswerView({ bot, prompt, onAskAgain }: Props) {
       markdown={`${quote(prompt)}\n\n${body}`}
       actions={
         <ActionPanel>
+          {/* Action principale : aller voir dans Orca. La CLI ne sait pas cibler un chat de bot
+              (`terminal switch` refuse son handle : terminal_handle_stale), donc on ouvre Orca sans ciblage. */}
+          <Action title="Ouvrir Orca" icon={Icon.AppWindow} onAction={openOrcaAndClose} />
           {phase === "answered" && reply !== null && (
             <>
               <Action.CopyToClipboard title="Copier la réponse" content={reply} />
@@ -162,19 +173,19 @@ export function AnswerView({ bot, prompt, onAskAgain }: Props) {
             </>
           )}
           {canReread && <Action title="Relire la réponse" icon={Icon.ArrowClockwise} onAction={reread} />}
-          {sessionId && (
-            <Action.CopyToClipboard
-              title="Copier l'ID de session"
-              content={sessionId}
-              shortcut={Keyboard.Shortcut.Common.Copy}
-            />
-          )}
           {onAskAgain && (
             <Action
               title={`Nouvelle question à ${bot.name}`}
               icon={Icon.Message}
               shortcut={Keyboard.Shortcut.Common.New}
               onAction={onAskAgain}
+            />
+          )}
+          {sessionId && (
+            <Action.CopyToClipboard
+              title="Copier l'ID de session"
+              content={sessionId}
+              shortcut={Keyboard.Shortcut.Common.Copy}
             />
           )}
         </ActionPanel>
