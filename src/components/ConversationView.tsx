@@ -37,27 +37,24 @@ function lastAgentMessage(conversation: Conversation): string | null {
 function toMarkdown(conversation: Conversation, authorName: string): string {
   const blocks = conversation.entries.map((entry) => {
     if (entry.role === "error") {
-      return `**Erreur**\n\n${quote(entry.text)}`;
+      return `**Error**\n\n${quote(entry.text)}`;
     }
-    return `**${entry.role === "user" ? "Toi" : authorName}**\n\n${entry.text}`;
+    return `**${entry.role === "user" ? "You" : authorName}**\n\n${entry.text}`;
   });
   if (conversation.state === "working") {
-    blocks.push("*En cours…*");
+    blocks.push("*Working…*");
   }
   const text = blocks.join("\n\n---\n\n");
-  return conversation.limited
-    ? `*Conversation partielle : Orca a omis ou raccourci une partie des messages.*\n\n${text}`
-    : text;
+  return conversation.limited ? `*Partial conversation: Orca omitted or truncated older messages.*\n\n${text}` : text;
 }
 
 export function ConversationView({ sessionId, title, bot, harness }: Props) {
   // Le hook annule la mise à jour d'état au démontage : aucune lecture ne touche une vue fermée.
   const { data, isLoading, error, revalidate } = usePromise(readConversation, [sessionId], {
-    // Toast en français à la place de celui, anglais, de Raycast.
     onError: (readError) =>
       void showToast({
         style: Toast.Style.Failure,
-        title: "Impossible de lire la conversation",
+        title: "Failed to Read Conversation",
         message: readError.message,
       }),
   });
@@ -69,9 +66,9 @@ export function ConversationView({ sessionId, title, bot, harness }: Props) {
 
   let markdown: string;
   if (view) {
-    markdown = view.entries.length > 0 || view.state === "working" ? toMarkdown(view, authorName) : "*Aucun message.*";
+    markdown = view.entries.length > 0 || view.state === "working" ? toMarkdown(view, authorName) : "*No messages.*";
   } else if (error) {
-    markdown = quote(`Impossible de lire la conversation : ${error.message}`);
+    markdown = quote(`Failed to read conversation: ${error.message}`);
   } else {
     markdown = "";
   }
@@ -83,9 +80,9 @@ export function ConversationView({ sessionId, title, bot, harness }: Props) {
       markdown={markdown}
       actions={
         <ActionPanel>
-          {lastMessage !== null && <Action.CopyToClipboard title="Copier le dernier message" content={lastMessage} />}
+          {lastMessage !== null && <Action.CopyToClipboard title="Copy Last Message" content={lastMessage} />}
           <Action
-            title="Rafraîchir"
+            title="Refresh"
             icon={Icon.ArrowClockwise}
             shortcut={Keyboard.Shortcut.Common.Refresh}
             onAction={revalidate}

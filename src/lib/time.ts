@@ -3,19 +3,19 @@ const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 
 /**
- * Durée écoulée depuis `sinceMs`, en français : « à l'instant » sous 60 s, puis « depuis N min », « depuis N h », « depuis N j ».
- * Les valeurs sont tronquées (59 min 59 s reste « depuis 59 min »). Un début dans le futur compte comme « à l'instant ».
+ * Elapsed time since `sinceMs` in US English: "just now" under 60s, then "Nm ago", "Nh ago", "Nd ago".
+ * Values are floored (59m 59s stays "59m ago"). A start in the future counts as "just now".
  */
 export function formatSince(sinceMs: number, nowMs: number): string {
   const elapsed = Math.max(0, nowMs - sinceMs);
   if (elapsed < MINUTE_MS) {
-    return "à l'instant";
+    return "just now";
   }
   if (elapsed < HOUR_MS) {
-    return `depuis ${Math.floor(elapsed / MINUTE_MS)} min`;
+    return `${Math.floor(elapsed / MINUTE_MS)}m ago`;
   }
   if (elapsed < DAY_MS) {
-    return `depuis ${Math.floor(elapsed / HOUR_MS)} h`;
+    return `${Math.floor(elapsed / HOUR_MS)}h ago`;
   }
-  return `depuis ${Math.floor(elapsed / DAY_MS)} j`;
+  return `${Math.floor(elapsed / DAY_MS)}d ago`;
 }

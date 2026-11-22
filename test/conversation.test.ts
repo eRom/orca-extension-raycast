@@ -88,7 +88,7 @@ describe("parseConversation", () => {
       { role: "user", text: "q" },
       { role: "error", text: "rate limited" },
       { role: "error", text: "boom" },
-      { role: "error", text: "Erreur sans détail." },
+      { role: "error", text: "Error without details." },
     ]);
   });
 });

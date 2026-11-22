@@ -1,33 +1,32 @@
-# Orca pour Raycast
+# Orca for Raycast
 
-Pilote Orca depuis Raycast, sans quitter ce que tu fais. L'extension appelle la CLI `orca` : Orca ne passe jamais au premier plan, sauf pour « Aller voir », « Ouvrir Orca » et « Lancer Orca ».
+Control Orca from Raycast without leaving what you are doing. The extension calls the `orca` CLI so Orca stays in the background, except when you trigger **Go to Terminal**, **Open Orca**, or **Launch Orca**.
 
-## Commandes
+## Requirements
 
-- **Demander à un bot** : choisis un bot Orca, écris-lui un prompt et lis sa réponse directement dans Raycast. Chaque question ouvre un nouveau chat du bot.
-- **Demander au bot par défaut** : tape ta question directement dans la barre Raycast, la réponse du bot par défaut s'affiche. Sans bot par défaut, tu choisis le bot et la question part aussitôt.
-- **Agents ouverts** : la liste de tes agents Orca, rangés en « Attend ta réponse », « En cours » et « Terminés », rafraîchie toutes les 5 secondes. Tu peux lire la conversation d'un agent, aller voir son terminal, ou copier son ID de session.
+- macOS with Raycast and Orca (`Orca.app`) installed.
 
-## Installation locale
+## Commands
+
+- **Ask a Bot**: Pick an Orca bot, write a prompt, and read its reply directly in Raycast. Each question starts a new bot chat.
+- **Ask Default Bot**: Type your question straight in the Raycast bar and view your default bot's reply. If no default bot is configured, you pick a bot and the question is sent right away.
+- **Open Agents**: Lists your Orca agents grouped into **Waiting for Reply**, **In Progress**, and **Done**, refreshed every 5 seconds. You can read an agent's conversation, jump to its terminal, or copy its session ID.
+
+## Preferences
+
+- **Orca CLI Path**: Leave empty to use the bundled CLI (`/Applications/Orca.app/Contents/Resources/bin/orca`). Set this only if your CLI is located elsewhere.
+- **Default Bot**: Path to a bot folder inside `~/.orca/bots` (for example `~/.orca/bots/leglaude`). The extension reads its `bot.json` (`id`, `name`, `agent`). This bot appears at the top with a **Default** tag. A paused bot is not detected before sending; Orca rejects the request on launch.
+
+## Known Limitations
+
+- Bot chats cannot be focused directly in Orca from the CLI: **Go to Terminal** only applies to terminal-based agents. For chats, the extension offers to read the conversation or open Orca.
+- Each question sent to a bot starts a new chat; follow-up replies in the same thread are not supported yet.
+
+## Local Development
 
 ```sh
 bun install
 bun run dev
 ```
 
-`bun run dev` lance `ray develop` : l'extension apparaît dans Raycast tant que la commande tourne. Il faut Raycast et Orca installés sur ce Mac.
-
-## Préférences
-
-- **Chemin de la CLI Orca** : laisse vide pour utiliser la CLI embarquée (`/Applications/Orca.app/Contents/Resources/bin/orca`). Renseigne-la seulement si ta CLI est ailleurs.
-- **Bot par défaut** : le dossier d'un bot dans `~/.orca/bots` (par exemple `~/.orca/bots/leglaude`). L'extension lit son `bot.json` (id, nom, agent). Ce bot apparaît en tête avec le tag « Par défaut ». Un bot en pause n'est pas détecté avant l'envoi : c'est Orca qui refuse la question.
-
-## Limites connues
-
-- Un chat de bot ne s'ouvre pas dans Orca depuis la CLI : « Aller voir » ne concerne que les agents en terminal. Pour un chat, l'extension propose de lire la conversation ou d'ouvrir Orca.
-- Chaque question à un bot crée un nouveau chat : il n'y a pas de suite de conversation.
-- Le cas « Orca fermé » (message « Orca n'est pas lancé » et action « Lancer Orca ») n'est pas encore validé en conditions réelles.
-
-## Outillage
-
-Le projet utilise bun en local. Le Store Raycast exige npm et un `package-lock.json` (doc « Prepare an Extension for Store ») : la publication sur le Store est donc hors v1.
+`bun run dev` runs `ray develop`, making the extension available in Raycast while the process is running.

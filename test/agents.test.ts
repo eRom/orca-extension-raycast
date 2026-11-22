@@ -165,7 +165,7 @@ describe("parseOpenAgents", () => {
 describe("displayTitle", () => {
   test("noisy titles fall back", () => {
     expect(displayTitle({ conversationName: "<local-command-caveat>The command below", prompt: "" })).toBe(
-      "Session sans titre",
+      "Untitled Session",
     );
     expect(displayTitle({ conversationName: "<x>", prompt: "Line one\nLine two" })).toBe("Line one");
 
@@ -185,7 +185,7 @@ describe("displayTitle", () => {
   });
 
   test("a prompt starting with < still falls back", () => {
-    expect(displayTitle({ prompt: "<system>x" })).toBe("Session sans titre");
+    expect(displayTitle({ prompt: "<system>x" })).toBe("Untitled Session");
   });
 
   test("a candidate equal to the bot name is skipped so bot chats stay distinguishable", () => {
@@ -196,7 +196,7 @@ describe("displayTitle", () => {
   });
 
   test("a bot chat with only the bot name keeps a title", () => {
-    expect(displayTitle({ conversationName: "test", prompt: "" }, "test")).toBe("Session sans titre");
+    expect(displayTitle({ conversationName: "test", prompt: "" }, "test")).toBe("Untitled Session");
   });
 });
 
@@ -234,10 +234,10 @@ describe("groupBySection", () => {
     ]);
     expect(groups.map((group) => group.section)).toEqual(["running", "done"]);
     expect(groups[1].agents.map((agent) => agent.sessionId)).toEqual(["d2", "d1"]);
-    expect(groups[1].title).toBe("Terminés");
+    expect(groups[1].title).toBe("Done");
   });
 
-  test("puts attention first with its French title and does not mutate its input", () => {
+  test("puts attention first with its English title and does not mutate its input", () => {
     const input = [
       makeAgent({ sessionId: "r", section: "running" }),
       makeAgent({ sessionId: "a", section: "attention", updatedAt: 1 }),
@@ -246,8 +246,8 @@ describe("groupBySection", () => {
     const snapshot = input.map((agent) => agent.sessionId);
     const groups = groupBySection(input);
     expect(groups.map((group) => [group.section, group.title])).toEqual([
-      ["attention", "Attend ta réponse"],
-      ["running", "En cours"],
+      ["attention", "Waiting for Reply"],
+      ["running", "In Progress"],
     ]);
     expect(groups[0].agents.map((agent) => agent.sessionId)).toEqual(["a2", "a"]);
     expect(input.map((agent) => agent.sessionId)).toEqual(snapshot);

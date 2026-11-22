@@ -33,7 +33,7 @@ const asString = (value: unknown): string => (typeof value === "string" ? value 
 const asNumber = (value: unknown): number | null =>
   typeof value === "number" && Number.isFinite(value) ? value : null;
 
-const UNTITLED = "Session sans titre";
+const UNTITLED = "Untitled Session";
 const TITLE_MAX_LENGTH = 80;
 const TERMINAL_PREFIX = "term_";
 const CHAT_PREFIX = "orca_session_id:";
@@ -170,9 +170,9 @@ export function parseOpenAgents(result: unknown): OpenAgent[] {
 }
 
 const SECTION_ORDER: { section: AgentSection; title: string }[] = [
-  { section: "attention", title: "Attend ta réponse" },
-  { section: "running", title: "En cours" },
-  { section: "done", title: "Terminés" },
+  { section: "attention", title: "Waiting for Reply" },
+  { section: "running", title: "In Progress" },
+  { section: "done", title: "Done" },
 ];
 
 /** Regroupe par section dans l'ordre fixe, omet les sections vides, trie chaque section du plus récent au plus ancien. */

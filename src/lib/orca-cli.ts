@@ -39,12 +39,12 @@ export function parseEnvelope<T>(stdout: string): T {
     const excerpt = stdout.trim().slice(0, 200);
     throw new OrcaCliError(
       "invalid_output",
-      excerpt ? `Sortie inattendue de la CLI Orca : ${excerpt}` : "La CLI Orca n'a rien renvoyé.",
+      excerpt ? `Unexpected output from Orca CLI: ${excerpt}` : "Orca CLI returned no output.",
     );
   }
 
   if (!isEnvelope(parsed)) {
-    throw new OrcaCliError("invalid_output", "La CLI Orca a renvoyé une réponse dans un format inattendu.");
+    throw new OrcaCliError("invalid_output", "Orca CLI returned an unexpected response format.");
   }
 
   if (parsed.ok) {
@@ -52,7 +52,7 @@ export function parseEnvelope<T>(stdout: string): T {
   }
 
   const code = typeof parsed.error?.code === "string" ? parsed.error.code : "unknown_error";
-  const message = typeof parsed.error?.message === "string" ? parsed.error.message : "Erreur inconnue d'Orca.";
+  const message = typeof parsed.error?.message === "string" ? parsed.error.message : "Unknown Orca error.";
   throw new OrcaCliError(code, message);
 }
 
@@ -74,7 +74,7 @@ export function runOrca<T>(args: string[], options: RunOptions = {}): Promise<T>
   const orcaPath = resolveOrcaPath(options.orcaPath);
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
-  const binaryMissing = new OrcaCliError("binary_not_found", `CLI Orca introuvable : ${orcaPath}`);
+  const binaryMissing = new OrcaCliError("binary_not_found", `Orca CLI not found: ${orcaPath}`);
   if (!existsSync(orcaPath)) {
     return Promise.reject(binaryMissing);
   }
@@ -93,7 +93,7 @@ export function runOrca<T>(args: string[], options: RunOptions = {}): Promise<T>
             return;
           }
           if (failure.killed) {
-            reject(new OrcaCliError("timeout", `La CLI Orca n'a pas répondu en ${Math.round(timeoutMs / 1000)} s.`));
+            reject(new OrcaCliError("timeout", `Orca CLI did not respond within ${Math.round(timeoutMs / 1000)}s.`));
             return;
           }
           // Orca peut sortir en code non nul tout en écrivant une enveloppe d'erreur lisible sur stdout.
@@ -106,7 +106,7 @@ export function runOrca<T>(args: string[], options: RunOptions = {}): Promise<T>
             return;
           }
           const detail = stderr.trim() || failure.message;
-          reject(new OrcaCliError("invalid_output", `La CLI Orca a échoué : ${detail.slice(0, 200)}`));
+          reject(new OrcaCliError("invalid_output", `Orca CLI failed: ${detail.slice(0, 200)}`));
           return;
         }
 

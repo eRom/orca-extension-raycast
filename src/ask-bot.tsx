@@ -61,7 +61,7 @@ export function PromptForm({ bot }: { bot: Bot }) {
       }
     },
     validation: {
-      prompt: (value) => (value?.trim() ? undefined : "Écris un prompt pour ce bot."),
+      prompt: (value) => (value?.trim() ? undefined : "Enter a prompt for this bot."),
     },
   });
 
@@ -70,16 +70,16 @@ export function PromptForm({ bot }: { bot: Bot }) {
       navigationTitle={bot.name}
       actions={
         <ActionPanel>
-          <Action.SubmitForm title="Envoyer" icon={Icon.Message} onSubmit={handleSubmit} />
+          <Action.SubmitForm title="Send" icon={Icon.Message} onSubmit={handleSubmit} />
         </ActionPanel>
       }
     >
-      <Form.TextArea title="Prompt" placeholder={`Écris à ${bot.name}…`} autoFocus {...itemProps.prompt} />
+      <Form.TextArea title="Prompt" placeholder={`Message ${bot.name}…`} autoFocus {...itemProps.prompt} />
     </Form>
   );
 }
 
-/** Liste des bots. Avec `prompt` (venu de « Demander au bot par défaut »), choisir un bot envoie directement ce prompt. */
+/** Bot list. When `prompt` is provided (from "Ask Default Bot"), selecting a bot sends it immediately. */
 export function BotList({ prompt }: { prompt?: string } = {}) {
   const { push } = useNavigation();
   const defaultId = defaultBotId();
@@ -88,11 +88,10 @@ export function BotList({ prompt }: { prompt?: string } = {}) {
     isLoading,
     error,
   } = usePromise(loadBots, [], {
-    // Toast en français à la place de celui, anglais, de Raycast.
     onError: (loadError) =>
       void showToast({
         style: Toast.Style.Failure,
-        title: "Impossible de lister les bots",
+        title: "Failed to List Bots",
         message: loadError.message,
       }),
   });
@@ -101,24 +100,24 @@ export function BotList({ prompt }: { prompt?: string } = {}) {
     if (bot.paused) {
       void showToast({
         style: Toast.Style.Failure,
-        title: "Ce bot est en pause",
-        message: "Réactive-le dans Orca pour lui écrire.",
+        title: "Bot is paused",
+        message: "Resume it in Orca to send messages.",
       });
       return;
     }
     if (bot.folder === null) {
       void showToast({
         style: Toast.Style.Failure,
-        title: "Dossier du bot introuvable",
-        message: "Le fichier bot.json de ce bot est introuvable dans ~/.orca/bots.",
+        title: "Bot folder not found",
+        message: "The bot.json file for this bot was not found in ~/.orca/bots.",
       });
       return;
     }
     if (!bot.harness) {
       void showToast({
         style: Toast.Style.Failure,
-        title: "Bot mal configuré",
-        message: "Ce bot n'a pas d'agent défini dans Orca.",
+        title: "Bot misconfigured",
+        message: "This bot has no agent configured in Orca.",
       });
       return;
     }
@@ -132,18 +131,14 @@ export function BotList({ prompt }: { prompt?: string } = {}) {
   return (
     <List
       isLoading={isLoading}
-      navigationTitle={prompt ? "Choisir un bot" : undefined}
-      searchBarPlaceholder={prompt ? "À quel bot poser ta question ?" : "Chercher un bot"}
+      navigationTitle={prompt ? "Choose a Bot" : undefined}
+      searchBarPlaceholder={prompt ? "Which bot do you want to ask?" : "Search bots"}
     >
       {error ? (
-        <List.EmptyView icon={Icon.Warning} title="Impossible de lister les bots" description={error.message} />
+        <List.EmptyView icon={Icon.Warning} title="Failed to List Bots" description={error.message} />
       ) : bots !== undefined && bots.length === 0 ? (
         // Vue vide personnalisée seulement si Orca n'a vraiment aucun bot : sinon, la vue vide de Raycast couvre « recherche sans résultat ».
-        <List.EmptyView
-          icon={Icon.Person}
-          title="Aucun bot"
-          description="Crée un bot dans Orca pour pouvoir lui écrire."
-        />
+        <List.EmptyView icon={Icon.Person} title="No Bots" description="Create a bot in Orca to start chatting." />
       ) : null}
       {(bots ?? []).map((bot) => (
         <List.Item
@@ -152,14 +147,14 @@ export function BotList({ prompt }: { prompt?: string } = {}) {
           subtitle={bot.specialty}
           icon={bot.paused ? { source: Icon.Pause, tintColor: Color.SecondaryText } : Icon.Person}
           accessories={[
-            ...(bot.id === defaultId ? [{ tag: { value: "Par défaut", color: Color.Blue } }] : []),
+            ...(bot.id === defaultId ? [{ tag: { value: "Default", color: Color.Blue } }] : []),
             ...(bot.harness ? [{ tag: bot.harness }] : []),
-            ...(bot.paused ? [{ tag: "En pause" }] : []),
+            ...(bot.paused ? [{ tag: "Paused" }] : []),
           ]}
           actions={
             <ActionPanel>
               <Action
-                title={prompt ? "Envoyer la question" : "Écrire au bot"}
+                title={prompt ? "Send Question" : "Message Bot"}
                 icon={Icon.Message}
                 onAction={() => writeToBot(bot)}
               />

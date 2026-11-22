@@ -7,7 +7,7 @@ export type Entry = { role: "user" | "assistant" | "error" | string; text: strin
 /** `limited` : la CLI a omis ou raccourci une partie de la conversation. */
 export type Conversation = { state: TurnState; entries: Entry[]; limited: boolean };
 
-const NO_ERROR_DETAIL = "Erreur sans détail.";
+const NO_ERROR_DETAIL = "Error without details.";
 
 const asRecord = (value: unknown): Record<string, unknown> =>
   typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};

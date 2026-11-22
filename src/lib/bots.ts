@@ -100,10 +100,10 @@ export function readBotFromFolder(folder: string): Bot | null {
   }
 }
 
-/** Bot par défaut en tête, puis dernier utilisé, puis non pausés avant pausés, puis ordre alphabétique français. */
+/** Bot par défaut en tête, puis dernier utilisé, puis non pausés avant pausés, puis ordre alphabétique. */
 export function sortBots(bots: Bot[], lastUsedId?: string, defaultId?: string): Bot[] {
   const rank = (bot: Bot): number => (bot.id === defaultId ? -1 : bot.id === lastUsedId ? 0 : bot.paused ? 2 : 1);
-  return [...bots].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, "fr"));
+  return [...bots].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, "en"));
 }
 
 /**
@@ -115,7 +115,7 @@ export function launchArgs(bot: Bot, prompt: string): string[] {
   if (bot.folder === null) {
     throw new OrcaCliError(
       "bot_folder_missing",
-      `Dossier introuvable pour le bot ${bot.name} : impossible de le solliciter sans risquer un mauvais chemin.`,
+      `Bot folder not found for ${bot.name}: cannot launch without risking a wrong path.`,
     );
   }
   return [

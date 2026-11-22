@@ -79,7 +79,7 @@ export function AnswerView({ bot, prompt, onAskAgain }: Props) {
         if (cancelled) return;
         readFailures += 1;
         if (readFailures >= MAX_READ_FAILURES) {
-          fail("Impossible de lire la réponse", error);
+          fail("Failed to Read Reply", error);
           return;
         }
         timer = setTimeout(() => void poll(id), POLL_INTERVAL_MS);
@@ -116,7 +116,7 @@ export function AnswerView({ bot, prompt, onAskAgain }: Props) {
         setSessionId(id);
         void poll(id);
       },
-      (error) => fail("Impossible d'envoyer le prompt", error),
+      (error) => fail("Failed to Send Prompt", error),
     );
 
     return () => {
@@ -138,20 +138,20 @@ export function AnswerView({ bot, prompt, onAskAgain }: Props) {
       break;
     case "ended":
       body = botError
-        ? `**Erreur**\n\n${quote(botError)}`
-        : `*${bot.name} n'a pas répondu. Ouvre ses chats dans Orca pour voir ce qui s'est passé.*`;
+        ? `**Error**\n\n${quote(botError)}`
+        : `*${bot.name} did not reply. Open its chats in Orca to see what happened.*`;
       break;
     case "terminal":
-      body = `*Le prompt est parti, mais ${bot.name} tourne dans un terminal : sa réponse sera dans Orca.*`;
+      body = `*Prompt sent, but ${bot.name} is running in a terminal: its reply will appear in Orca.*`;
       break;
     case "timeout":
-      body = `*Toujours en cours. La réponse arrivera dans les chats de ${bot.name} dans Orca.*`;
+      body = `*Still working. The reply will arrive in ${bot.name}'s chats in Orca.*`;
       break;
     case "error":
-      body = quote(`Échec : ${errorMessage ?? "erreur inconnue"}`);
+      body = quote(`Failed: ${errorMessage ?? "unknown error"}`);
       break;
     default:
-      body = botError ? `**Erreur**\n\n${quote(botError)}` : `*${bot.name} réfléchit…*`;
+      body = botError ? `**Error**\n\n${quote(botError)}` : `*${bot.name} is thinking…*`;
   }
 
   const canReread = sessionId !== null && (phase === "error" || phase === "timeout");
@@ -165,17 +165,17 @@ export function AnswerView({ bot, prompt, onAskAgain }: Props) {
         <ActionPanel>
           {/* Action principale : aller voir dans Orca. La CLI ne sait pas cibler un chat de bot
               (`terminal switch` refuse son handle : terminal_handle_stale), donc on ouvre Orca sans ciblage. */}
-          <Action title="Ouvrir Orca" icon={Icon.AppWindow} onAction={openOrcaAndClose} />
+          <Action title="Open Orca" icon={Icon.AppWindow} onAction={openOrcaAndClose} />
           {phase === "answered" && reply !== null && (
             <>
-              <Action.CopyToClipboard title="Copier la réponse" content={reply} />
-              <Action.Paste title="Coller la réponse" content={reply} />
+              <Action.CopyToClipboard title="Copy Reply" content={reply} />
+              <Action.Paste title="Paste Reply" content={reply} />
             </>
           )}
-          {canReread && <Action title="Relire la réponse" icon={Icon.ArrowClockwise} onAction={reread} />}
+          {canReread && <Action title="Retry Reading Reply" icon={Icon.ArrowClockwise} onAction={reread} />}
           {onAskAgain && (
             <Action
-              title={`Nouvelle question à ${bot.name}`}
+              title={`New Question for ${bot.name}`}
               icon={Icon.Message}
               shortcut={Keyboard.Shortcut.Common.New}
               onAction={onAskAgain}
@@ -183,7 +183,7 @@ export function AnswerView({ bot, prompt, onAskAgain }: Props) {
           )}
           {sessionId && (
             <Action.CopyToClipboard
-              title="Copier l'ID de session"
+              title="Copy Session ID"
               content={sessionId}
               shortcut={Keyboard.Shortcut.Common.Copy}
             />

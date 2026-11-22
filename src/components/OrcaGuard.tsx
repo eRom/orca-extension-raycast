@@ -15,7 +15,7 @@ export async function openOrca(): Promise<boolean> {
   } catch (error) {
     await showToast({
       style: Toast.Style.Failure,
-      title: "Impossible d'ouvrir Orca",
+      title: "Failed to Open Orca",
       message: error instanceof Error ? error.message : String(error),
     });
     return false;
@@ -27,7 +27,7 @@ export async function openOrca(): Promise<boolean> {
  * Pendant la vérification, les enfants sont rendus tels quels : leur liste porte son propre `isLoading`.
  */
 export function OrcaGuard({ children }: { children: ReactNode }) {
-  // `onError` vide : l'état vide affiché plus bas suffit, sans le toast anglais par défaut de Raycast.
+  // `onError` vide : l'état vide affiché plus bas suffit, sans le toast par défaut de Raycast.
   const { data, error } = usePromise(
     async () => parseStatus(await runOrca(["status"], { orcaPath: getOrcaPath() })),
     [],
@@ -43,11 +43,11 @@ export function OrcaGuard({ children }: { children: ReactNode }) {
         <List>
           <List.EmptyView
             icon={Icon.Warning}
-            title="CLI Orca introuvable"
-            description="Vérifie le chemin dans les préférences de l'extension."
+            title="Orca CLI Not Found"
+            description="Check the CLI path in extension preferences."
             actions={
               <ActionPanel>
-                <Action title="Ouvrir les préférences" icon={Icon.Gear} onAction={openExtensionPreferences} />
+                <Action title="Open Preferences" icon={Icon.Gear} onAction={openExtensionPreferences} />
               </ActionPanel>
             }
           />
@@ -56,7 +56,7 @@ export function OrcaGuard({ children }: { children: ReactNode }) {
     }
     return (
       <List>
-        <List.EmptyView icon={Icon.Warning} title="Orca ne répond pas" description={error.message} />
+        <List.EmptyView icon={Icon.Warning} title="Orca Is Not Responding" description={error.message} />
       </List>
     );
   }
@@ -66,11 +66,11 @@ export function OrcaGuard({ children }: { children: ReactNode }) {
       <List>
         <List.EmptyView
           icon={Icon.Power}
-          title="Orca n'est pas lancé"
-          description="Lance Orca pour parler à tes bots et voir tes agents."
+          title="Orca Is Not Running"
+          description="Launch Orca to talk to your bots and monitor your agents."
           actions={
             <ActionPanel>
-              <Action title="Lancer Orca" icon={Icon.Play} onAction={openOrca} />
+              <Action title="Launch Orca" icon={Icon.Play} onAction={openOrca} />
             </ActionPanel>
           }
         />

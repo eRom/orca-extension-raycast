@@ -30,11 +30,11 @@ export default function Command(props: LaunchProps<{ arguments: Arguments.AskDef
       <List>
         <List.EmptyView
           icon={Icon.Warning}
-          title="Ce dossier n'est pas un bot Orca"
-          description={`${folder} ne contient pas de bot.json avec un agent. Choisis un dossier dans ~/.orca/bots.`}
+          title="Not an Orca Bot Folder"
+          description={`${folder} does not contain a bot.json with an agent. Choose a folder inside ~/.orca/bots.`}
           actions={
             <ActionPanel>
-              <Action title="Ouvrir les préférences" icon={Icon.Gear} onAction={openExtensionPreferences} />
+              <Action title="Open Preferences" icon={Icon.Gear} onAction={openExtensionPreferences} />
             </ActionPanel>
           }
         />

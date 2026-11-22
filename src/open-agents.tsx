@@ -29,10 +29,10 @@ const SECTION_ICONS: Record<AgentSection, { source: Icon; tintColor: Color }> = 
 };
 
 const STATE_LABELS: Record<string, string> = {
-  working: "En cours",
-  blocked: "Bloqué",
-  waiting: "En attente",
-  done: "Terminé",
+  working: "Working",
+  blocked: "Blocked",
+  waiting: "Waiting",
+  done: "Done",
 };
 
 async function fetchOpenAgents(): Promise<OpenAgent[]> {
@@ -43,22 +43,22 @@ async function fetchOpenAgents(): Promise<OpenAgent[]> {
 function detailMarkdown(agent: OpenAgent): string {
   const sections: string[] = [];
   if (agent.lastPrompt) {
-    sections.push(`**Dernière demande**\n\n${quote(agent.lastPrompt)}`);
+    sections.push(`**Last Prompt**\n\n${quote(agent.lastPrompt)}`);
   }
   if (agent.lastMessage) {
-    sections.push(`**Dernier message**\n\n${agent.lastMessage}`);
+    sections.push(`**Last Message**\n\n${agent.lastMessage}`);
   }
   return sections.join("\n\n");
 }
 
-/** « Aller voir » : cible le terminal, puis met Orca au premier plan. En cas d'échec de la CLI, Orca n'est pas ouvert. */
+/** « Go to Terminal » : cible le terminal, puis met Orca au premier plan. En cas d'échec de la CLI, Orca n'est pas ouvert. */
 async function goToTerminal(handle: string): Promise<void> {
   try {
     await runOrca(["terminal", "switch", "--terminal", handle], { orcaPath: getOrcaPath() });
   } catch (error) {
     await showToast({
       style: Toast.Style.Failure,
-      title: "Impossible d'ouvrir ce terminal",
+      title: "Failed to Open Terminal",
       message: error instanceof Error ? error.message : String(error),
     });
     return;
@@ -83,7 +83,7 @@ function AgentItem({ agent, onRefresh, showingDetail, onToggleDetail }: AgentIte
 
   const readConversation = () =>
     push(<ConversationView sessionId={agent.sessionId} title={agent.title} bot={agent.bot} harness={agent.harness} />);
-  const stateLabel = STATE_LABELS[agent.state] ?? (agent.state || "inconnu");
+  const stateLabel = STATE_LABELS[agent.state] ?? (agent.state || "unknown");
   const since = agent.stateSince === null ? null : formatSince(agent.stateSince, Date.now());
   const handle = agent.terminalHandle;
 
@@ -98,21 +98,21 @@ function AgentItem({ agent, onRefresh, showingDetail, onToggleDetail }: AgentIte
       subtitle={showingDetail ? undefined : agent.subtitle}
       icon={SECTION_ICONS[agent.section]}
       accessories={
-        showingDetail ? [] : [{ tag: agent.harness || "inconnu" }, ...(since === null ? [] : [{ text: since }])]
+        showingDetail ? [] : [{ tag: agent.harness || "unknown" }, ...(since === null ? [] : [{ text: since }])]
       }
       detail={
         <List.Item.Detail
           markdown={detailMarkdown(agent)}
           metadata={
             <List.Item.Detail.Metadata>
-              <List.Item.Detail.Metadata.Label title="Projet" text={agent.repo || "inconnu"} />
-              <List.Item.Detail.Metadata.Label title="Workspace" text={agent.workspace || "inconnu"} />
-              <List.Item.Detail.Metadata.Label title="Harness" text={agent.harness || "inconnu"} />
+              <List.Item.Detail.Metadata.Label title="Project" text={agent.repo || "unknown"} />
+              <List.Item.Detail.Metadata.Label title="Workspace" text={agent.workspace || "unknown"} />
+              <List.Item.Detail.Metadata.Label title="Harness" text={agent.harness || "unknown"} />
               <List.Item.Detail.Metadata.Label
-                title="État"
+                title="State"
                 text={since === null ? stateLabel : `${stateLabel} · ${since}`}
               />
-              <List.Item.Detail.Metadata.Label title="ID de session" text={agent.sessionId} />
+              <List.Item.Detail.Metadata.Label title="Session ID" text={agent.sessionId} />
             </List.Item.Detail.Metadata>
           }
         />
@@ -121,28 +121,28 @@ function AgentItem({ agent, onRefresh, showingDetail, onToggleDetail }: AgentIte
         <ActionPanel>
           {handle !== null ? (
             <>
-              <Action title="Aller voir" icon={Icon.Terminal} onAction={() => goToTerminal(handle)} />
-              <Action title="Lire la conversation" icon={Icon.Message} onAction={readConversation} />
+              <Action title="Go to Terminal" icon={Icon.Terminal} onAction={() => goToTerminal(handle)} />
+              <Action title="Read Conversation" icon={Icon.Message} onAction={readConversation} />
             </>
           ) : (
             <>
-              <Action title="Lire la conversation" icon={Icon.Message} onAction={readConversation} />
-              <Action title="Ouvrir Orca" icon={Icon.AppWindow} onAction={openOrca} />
+              <Action title="Read Conversation" icon={Icon.Message} onAction={readConversation} />
+              <Action title="Open Orca" icon={Icon.AppWindow} onAction={openOrca} />
             </>
           )}
           <Action
-            title={showingDetail ? "Masquer les détails" : "Afficher les détails"}
+            title={showingDetail ? "Hide Details" : "Show Details"}
             icon={Icon.Sidebar}
             shortcut={TOGGLE_DETAIL_SHORTCUT}
             onAction={onToggleDetail}
           />
           <Action.CopyToClipboard
-            title="Copier l'ID de session"
+            title="Copy Session ID"
             content={agent.sessionId}
             shortcut={Keyboard.Shortcut.Common.Copy}
           />
           <Action
-            title="Rafraîchir"
+            title="Refresh"
             icon={Icon.ArrowClockwise}
             shortcut={Keyboard.Shortcut.Common.Refresh}
             onAction={onRefresh}
@@ -160,11 +160,10 @@ function AgentList() {
     error,
     revalidate,
   } = useCachedPromise(fetchOpenAgents, [], {
-    // Toast en français à la place de celui, anglais, de Raycast.
     onError: (listError) =>
       void showToast({
         style: Toast.Style.Failure,
-        title: "Impossible de lister les agents",
+        title: "Failed to List Agents",
         message: listError.message,
       }),
   });
@@ -184,15 +183,15 @@ function AgentList() {
     <List
       isLoading={isLoading && agents === undefined}
       isShowingDetail={showingDetail}
-      searchBarPlaceholder="Chercher un agent"
+      searchBarPlaceholder="Search agents"
     >
       {error && agents === undefined ? (
-        <List.EmptyView icon={Icon.Warning} title="Impossible de lister les agents" description={error.message} />
+        <List.EmptyView icon={Icon.Warning} title="Failed to List Agents" description={error.message} />
       ) : agents !== undefined && agents.length === 0 ? (
         <List.EmptyView
           icon={Icon.Person}
-          title="Aucun agent ouvert"
-          description="Lance un agent dans Orca pour le voir ici."
+          title="No Open Agents"
+          description="Start an agent in Orca to see it here."
         />
       ) : null}
       {groupBySection(agents ?? []).map((group) => (
