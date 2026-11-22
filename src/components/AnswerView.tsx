@@ -1,5 +1,4 @@
-import { Action, ActionPanel, Detail, Icon, Keyboard } from "@raycast/api";
-import { showFailureToast } from "@raycast/utils";
+import { Action, ActionPanel, Detail, Icon, Keyboard, Toast, showToast } from "@raycast/api";
 import { useEffect, useRef, useState } from "react";
 import { type Bot, launchArgs } from "../lib/bots";
 import { type Conversation, isAnswered, latestReply, parseConversation } from "../lib/conversation";
@@ -63,7 +62,7 @@ export function AnswerView({ bot, prompt, onAskAgain }: Props) {
       if (cancelled) return;
       setErrorMessage(describeError(error));
       setPhase("error");
-      void showFailureToast(error, { title, message: describeError(error) });
+      void showToast({ style: Toast.Style.Failure, title, message: describeError(error) });
     };
 
     // Lectures enchaînées (jamais deux en vol) : la suivante n'est planifiée qu'une fois la précédente terminée.

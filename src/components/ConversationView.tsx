@@ -1,4 +1,4 @@
-import { Action, ActionPanel, Detail, Icon, Keyboard } from "@raycast/api";
+import { Action, ActionPanel, Detail, Icon, Keyboard, Toast, showToast } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
 import { type Conversation, parseConversation } from "../lib/conversation";
 import { runOrca } from "../lib/orca-cli";
@@ -44,7 +44,13 @@ function toMarkdown(conversation: Conversation, authorName: string): string {
 export function ConversationView({ sessionId, title, harness }: Props) {
   // Le hook annule la mise à jour d'état au démontage : aucune lecture ne touche une vue fermée.
   const { data, isLoading, error, revalidate } = usePromise(readConversation, [sessionId], {
-    failureToastOptions: { title: "Impossible de lire la conversation" },
+    // Toast en français à la place de celui, anglais, de Raycast.
+    onError: (readError) =>
+      void showToast({
+        style: Toast.Style.Failure,
+        title: "Impossible de lire la conversation",
+        message: readError.message,
+      }),
   });
 
   const authorName = harness?.trim() ? harness.trim() : FALLBACK_AUTHOR;

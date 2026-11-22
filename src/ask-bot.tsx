@@ -54,7 +54,19 @@ function PromptForm({ bot }: { bot: Bot }) {
 
 function BotList() {
   const { push } = useNavigation();
-  const { data: bots, isLoading, error } = usePromise(loadBots);
+  const {
+    data: bots,
+    isLoading,
+    error,
+  } = usePromise(loadBots, [], {
+    // Toast en français à la place de celui, anglais, de Raycast.
+    onError: (loadError) =>
+      void showToast({
+        style: Toast.Style.Failure,
+        title: "Impossible de lister les bots",
+        message: loadError.message,
+      }),
+  });
 
   const writeToBot = (bot: Bot) => {
     if (bot.paused) {
@@ -88,13 +100,14 @@ function BotList() {
     <List isLoading={isLoading} searchBarPlaceholder="Chercher un bot">
       {error ? (
         <List.EmptyView icon={Icon.Warning} title="Impossible de lister les bots" description={error.message} />
-      ) : (
+      ) : bots !== undefined && bots.length === 0 ? (
+        // Vue vide personnalisée seulement si Orca n'a vraiment aucun bot : sinon, la vue vide de Raycast couvre « recherche sans résultat ».
         <List.EmptyView
           icon={Icon.Person}
           title="Aucun bot"
           description="Crée un bot dans Orca pour pouvoir lui écrire."
         />
-      )}
+      ) : null}
       {(bots ?? []).map((bot) => (
         <List.Item
           key={bot.id}

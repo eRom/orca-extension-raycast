@@ -12,7 +12,12 @@ export const ORCA_APP_PATH = "/Applications/Orca.app";
  * Pendant la vérification, les enfants sont rendus tels quels : leur liste porte son propre `isLoading`.
  */
 export function OrcaGuard({ children }: { children: ReactNode }) {
-  const { data, error } = usePromise(async () => parseStatus(await runOrca(["status"], { orcaPath: getOrcaPath() })));
+  // `onError` vide : l'état vide affiché plus bas suffit, sans le toast anglais par défaut de Raycast.
+  const { data, error } = usePromise(
+    async () => parseStatus(await runOrca(["status"], { orcaPath: getOrcaPath() })),
+    [],
+    { onError: () => {} },
+  );
 
   if (error) {
     if (error instanceof OrcaCliError && error.code === "binary_not_found") {

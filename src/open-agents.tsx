@@ -1,5 +1,17 @@
-import { Action, ActionPanel, Color, Icon, Keyboard, List, closeMainWindow, open, useNavigation } from "@raycast/api";
-import { showFailureToast, useCachedPromise } from "@raycast/utils";
+import {
+  Action,
+  ActionPanel,
+  Color,
+  Icon,
+  Keyboard,
+  List,
+  Toast,
+  closeMainWindow,
+  open,
+  showToast,
+  useNavigation,
+} from "@raycast/api";
+import { useCachedPromise } from "@raycast/utils";
 import { useEffect } from "react";
 import { ConversationView } from "./components/ConversationView";
 import { ORCA_APP_PATH, OrcaGuard } from "./components/OrcaGuard";
@@ -52,7 +64,11 @@ async function goToTerminal(handle: string): Promise<void> {
     await open(ORCA_APP_PATH);
     await closeMainWindow();
   } catch (error) {
-    await showFailureToast(error, { title: "Impossible d'ouvrir ce terminal" });
+    await showToast({
+      style: Toast.Style.Failure,
+      title: "Impossible d'ouvrir ce terminal",
+      message: error instanceof Error ? error.message : String(error),
+    });
   }
 }
 
@@ -125,7 +141,13 @@ function AgentList() {
     error,
     revalidate,
   } = useCachedPromise(fetchOpenAgents, [], {
-    failureToastOptions: { title: "Impossible de lister les agents" },
+    // Toast en français à la place de celui, anglais, de Raycast.
+    onError: (listError) =>
+      void showToast({
+        style: Toast.Style.Failure,
+        title: "Impossible de lister les agents",
+        message: listError.message,
+      }),
   });
 
   // Rafraîchissement périodique ; les données en cache restent affichées pendant la relecture, donc pas de clignotement.
@@ -134,13 +156,12 @@ function AgentList() {
     return () => clearInterval(timer);
   }, [revalidate]);
 
-  const isEmpty = (agents ?? []).length === 0;
-
   return (
-    <List isLoading={isLoading} isShowingDetail searchBarPlaceholder="Chercher un agent">
-      {error && isEmpty ? (
+    // Chargement visible au premier fetch seulement : sinon la barre clignote à chaque rafraîchissement de 5 s.
+    <List isLoading={isLoading && agents === undefined} isShowingDetail searchBarPlaceholder="Chercher un agent">
+      {error && agents === undefined ? (
         <List.EmptyView icon={Icon.Warning} title="Impossible de lister les agents" description={error.message} />
-      ) : !isLoading && isEmpty ? (
+      ) : agents !== undefined && agents.length === 0 ? (
         <List.EmptyView
           icon={Icon.Person}
           title="Aucun agent ouvert"
