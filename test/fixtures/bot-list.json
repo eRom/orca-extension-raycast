@@ -5,13 +5,13 @@
     "bots": [
       {
         "id": "894f4c2e-42a0-4874-88dc-41a058d80fb5",
-        "name": "LeGlaude",
+        "name": "Architect",
         "agent": "claude",
         "paused": false,
         "linked": [
           "GitHub"
         ],
-        "specialty": "Le bot qui construit : il transforme les demandes de Romain en code, specs et intégrations, en déléguant l'exécution à…",
+        "specialty": "Designs architecture, specs, and implementation plans.",
         "chats": {
           "count": 1,
           "home": true
@@ -19,11 +19,11 @@
       },
       {
         "id": "67ce8516-b0b5-4ede-89f2-5653d2d41cdb",
-        "name": "LeBombé",
+        "name": "Researcher",
         "agent": "antigravity",
         "paused": false,
         "linked": [],
-        "specialty": "Fast & Fun : je mène la recherche rapide, les revues critiques et le brainstorming aux côtés de Romain, LeGlaude…",
+        "specialty": "Fast technical research, brainstorming, and option comparison.",
         "chats": {
           "count": 1,
           "home": true
@@ -31,11 +31,11 @@
       },
       {
         "id": "0423748d-dd4d-45da-9581-c13de36566d5",
-        "name": "LaDenrée",
+        "name": "Reviewer",
         "agent": "grok",
         "paused": false,
         "linked": [],
-        "specialty": "Je sers de second regard : j'arbitre et je relis, je ne construis pas.",
+        "specialty": "Independent second opinion and critical code review.",
         "chats": {
           "count": 1,
           "home": true
@@ -43,11 +43,11 @@
       },
       {
         "id": "b4201eff-cb3e-45fe-ae11-f29318e646f5",
-        "name": "test",
+        "name": "helper",
         "agent": "claude",
         "paused": false,
         "linked": [],
-        "specialty": "sdfsdf",
+        "specialty": "General workspace assistant",
         "chats": {
           "count": 2,
           "home": true
@@ -57,6 +57,6 @@
     "unreachable": []
   },
   "_meta": {
-    "runtimeId": "fbdda5ae-e4fc-49f7-a223-971d1b511b8f"
+    "runtimeId": "11111111-2222-4333-8444-555555555555"
   }
 }

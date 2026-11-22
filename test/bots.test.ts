@@ -31,10 +31,10 @@ describe("readBotFromFolder", () => {
   };
 
   test("reads id, name and agent from bot.json, ignoring a trailing slash", () => {
-    const folder = writeBot(JSON.stringify({ id: "id-x", name: "LeGlaude", agent: "claude", avatar: "mascot:J1" }));
+    const folder = writeBot(JSON.stringify({ id: "id-x", name: "Architect", agent: "claude", avatar: "mascot:J1" }));
     expect(readBotFromFolder(`${folder}/`)).toEqual({
       id: "id-x",
-      name: "LeGlaude",
+      name: "Architect",
       harness: "claude",
       specialty: "",
       paused: false,
@@ -93,20 +93,20 @@ describe("readBotFolders", () => {
 describe("parseBotList", () => {
   test("parseBotList keeps all fields and resolves folders", () => {
     const envelope = JSON.parse(readFileSync(join(__dirname, "fixtures", "bot-list.json"), "utf8"));
-    const folders = new Map([["b4201eff-cb3e-45fe-ae11-f29318e646f5", "/h/.orca/bots/test"]]);
+    const folders = new Map([["b4201eff-cb3e-45fe-ae11-f29318e646f5", "/h/.orca/bots/helper"]]);
 
     const bots = parseBotList(envelope.result, folders);
     expect(bots).toHaveLength(4);
 
-    const test_ = bots.find((bot) => bot.name === "test");
-    expect(test_?.folder).toBe("/h/.orca/bots/test");
-    expect(test_?.harness).toBe("claude");
-    expect(test_?.paused).toBe(false);
-    expect(test_?.specialty).toBe("sdfsdf");
+    const helper = bots.find((bot) => bot.name === "helper");
+    expect(helper?.folder).toBe("/h/.orca/bots/helper");
+    expect(helper?.harness).toBe("claude");
+    expect(helper?.paused).toBe(false);
+    expect(helper?.specialty).toBe("General workspace assistant");
 
-    const denree = bots.find((bot) => bot.name === "LaDenrée");
-    expect(denree?.harness).toBe("grok");
-    expect(denree?.folder).toBeNull();
+    const reviewer = bots.find((bot) => bot.name === "Reviewer");
+    expect(reviewer?.harness).toBe("grok");
+    expect(reviewer?.folder).toBeNull();
   });
 
   test("parseBotList tolerates unexpected shapes", () => {

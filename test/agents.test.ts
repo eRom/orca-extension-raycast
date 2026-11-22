@@ -47,11 +47,11 @@ describe("parseOpenAgents", () => {
   test("chats and terminals are told apart", () => {
     const agents = parseOpenAgents(loadResult());
 
-    const chat = agents.find((agent) => agent.workspace === "LaDenrée");
+    const chat = agents.find((agent) => agent.workspace === "Reviewer");
     expect(chat?.kind).toBe("chat");
     expect(chat?.terminalHandle).toBeNull();
-    expect(chat?.subtitle).toBe("Bot · LaDenrée");
-    expect(chat?.bot).toBe("LaDenrée");
+    expect(chat?.subtitle).toBe("Bot · Reviewer");
+    expect(chat?.bot).toBe("Reviewer");
     expect(chat?.harness).toBe("grok");
 
     const terminal = agents.find((agent) => agent.terminalHandle === "term_2d695e95-b3f4-4528-8534-46ca57575e9c");
@@ -213,7 +213,7 @@ describe("sectionOf", () => {
 
 describe("subtitleOf", () => {
   test("uses the bot name when present, repo and workspace otherwise", () => {
-    expect(subtitleOf({ bot: "LeBombé", repo: "Bots", displayName: "LeBombé" })).toBe("Bot · LeBombé");
+    expect(subtitleOf({ bot: "Researcher", repo: "Bots", displayName: "Researcher" })).toBe("Bot · Researcher");
     expect(subtitleOf({ bot: null, repo: "orca", displayName: "main" })).toBe("orca · main");
     expect(subtitleOf({ repo: "orca", displayName: "main" })).toBe("orca · main");
   });

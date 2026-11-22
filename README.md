@@ -8,7 +8,7 @@ Control Orca from Raycast without leaving what you are doing. The extension call
 
 ## Requirements
 
-- macOS with [Raycast](https://www.raycast.com/) and [Orca](https://orca.dev/) (&gt;= 1.4.269) installed.
+- macOS with [Raycast](https://www.raycast.com/) and [Orca](https://orca.dev/) (>= 1.4.269) installed.
 
 ## Commands
 
@@ -29,8 +29,8 @@ Control Orca from Raycast without leaving what you are doing. The extension call
 ## Local Development
 
 ```sh
-bun install
-bun run dev
+npm install
+npm run dev
 ```
 
-`bun run dev` runs `ray develop`, making the extension available in Raycast while the process is running.
+`npm run dev` runs `ray develop`, making the extension available in Raycast while the process is running.
