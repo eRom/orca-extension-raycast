@@ -4,7 +4,7 @@
   "title": "Orca",
   "description": "Talk to your Orca bots and monitor your agents without leaving what you're doing.",
   "icon": "extension-icon.png",
-  "author": "erom",
+  "author": "eromleduk",
   "license": "MIT",
   "platforms": [
     "macOS"

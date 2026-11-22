@@ -1,7 +1,7 @@
 .codegraph
 .claude/
 _memory_
-docs/superpowers
+docs/
 node_modules/
 dist/
 raycast-env.d.ts
