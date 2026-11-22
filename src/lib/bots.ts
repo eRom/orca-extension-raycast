@@ -79,9 +79,30 @@ export function readBotFolders(botsDir: string = join(homedir(), ".orca/bots")):
   return folders;
 }
 
-/** Dernier utilisé en tête, puis non pausés avant pausés, puis ordre alphabétique français. */
-export function sortBots(bots: Bot[], lastUsedId?: string): Bot[] {
-  const rank = (bot: Bot): number => (bot.id === lastUsedId ? 0 : bot.paused ? 2 : 1);
+/**
+ * Lit le bot d'un dossier (préférence « Bot par défaut ») depuis son bot.json, sans passer par la CLI.
+ * Renvoie null si bot.json est absent, illisible, ou sans `id` ni `agent` : le dossier n'est pas un bot utilisable.
+ * `paused` vaut toujours false : bot.json ne porte pas l'état de pause, Orca refusera l'envoi si besoin.
+ */
+export function readBotFromFolder(folder: string): Bot | null {
+  const expanded = folder.startsWith("~/") ? join(homedir(), folder.slice(2)) : folder;
+  const normalized = expanded.replace(/\/+$/, "");
+  try {
+    const record = asRecord(JSON.parse(readFileSync(join(normalized, "bot.json"), "utf8")));
+    const id = asString(record.id);
+    const harness = asString(record.agent);
+    if (!id || !harness) {
+      return null;
+    }
+    return { id, name: asString(record.name) || id, harness, specialty: "", paused: false, folder: normalized };
+  } catch {
+    return null;
+  }
+}
+
+/** Bot par défaut en tête, puis dernier utilisé, puis non pausés avant pausés, puis ordre alphabétique français. */
+export function sortBots(bots: Bot[], lastUsedId?: string, defaultId?: string): Bot[] {
+  const rank = (bot: Bot): number => (bot.id === defaultId ? -1 : bot.id === lastUsedId ? 0 : bot.paused ? 2 : 1);
   return [...bots].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, "fr"));
 }
 

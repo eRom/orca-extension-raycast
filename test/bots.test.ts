@@ -3,7 +3,15 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { OrcaCliError } from "../src/lib/orca-cli";
-import { type Bot, extractSessionId, launchArgs, parseBotList, readBotFolders, sortBots } from "../src/lib/bots";
+import {
+  type Bot,
+  extractSessionId,
+  launchArgs,
+  parseBotList,
+  readBotFolders,
+  readBotFromFolder,
+  sortBots,
+} from "../src/lib/bots";
 
 const makeBot = (overrides: Partial<Bot>): Bot => ({
   id: "id",
@@ -13,6 +21,45 @@ const makeBot = (overrides: Partial<Bot>): Bot => ({
   paused: false,
   folder: "/h/.orca/bots/bot",
   ...overrides,
+});
+
+describe("readBotFromFolder", () => {
+  const writeBot = (content: string): string => {
+    const folder = mkdtempSync(join(tmpdir(), "orca-default-bot-"));
+    writeFileSync(join(folder, "bot.json"), content);
+    return folder;
+  };
+
+  test("reads id, name and agent from bot.json, ignoring a trailing slash", () => {
+    const folder = writeBot(JSON.stringify({ id: "id-x", name: "LeGlaude", agent: "claude", avatar: "mascot:J1" }));
+    expect(readBotFromFolder(`${folder}/`)).toEqual({
+      id: "id-x",
+      name: "LeGlaude",
+      harness: "claude",
+      specialty: "",
+      paused: false,
+      folder,
+    });
+  });
+
+  test("the bot it returns builds the probed launch command", () => {
+    const folder = writeBot(JSON.stringify({ id: "id-x", name: "test", agent: "claude" }));
+    const bot = readBotFromFolder(folder);
+    expect(bot).not.toBeNull();
+    expect(launchArgs(bot as Bot, "salut")).toContain(`path:${folder}`);
+  });
+
+  test("returns null for a folder that is not a usable bot", () => {
+    expect(readBotFromFolder(mkdtempSync(join(tmpdir(), "orca-empty-")))).toBeNull();
+    expect(readBotFromFolder(writeBot("{not json"))).toBeNull();
+    expect(readBotFromFolder(writeBot(JSON.stringify({ id: "id-x", name: "x" })))).toBeNull();
+    expect(readBotFromFolder(writeBot(JSON.stringify({ name: "x", agent: "claude" })))).toBeNull();
+  });
+
+  test("falls back to the id when bot.json has no name", () => {
+    const folder = writeBot(JSON.stringify({ id: "id-x", agent: "grok" }));
+    expect(readBotFromFolder(folder)?.name).toBe("id-x");
+  });
 });
 
 describe("readBotFolders", () => {
@@ -86,6 +133,13 @@ describe("sortBots", () => {
     const snapshot = input.map((bot) => bot.id);
     expect(sortBots(input).map((bot) => bot.id)).toEqual(["a", "e", "z"]);
     expect(input.map((bot) => bot.id)).toEqual(snapshot);
+  });
+
+  test("sortBots puts the default bot before the last used one", () => {
+    const a = makeBot({ id: "a", name: "A" });
+    const b = makeBot({ id: "b", name: "B" });
+    const c = makeBot({ id: "c", name: "C" });
+    expect(sortBots([a, b, c], "b", "c").map((bot) => bot.id)).toEqual(["c", "b", "a"]);
   });
 
   test("sortBots keeps a paused last used bot first", () => {

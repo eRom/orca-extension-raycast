@@ -25,6 +25,20 @@
       "title": "Agents ouverts",
       "description": "Ce que font tes agents Orca, en un coup d'œil",
       "mode": "view"
+    },
+    {
+      "name": "ask-default-bot",
+      "title": "Demander au bot par défaut",
+      "description": "Pose ta question au bot par défaut et lis sa réponse, en une étape",
+      "mode": "view",
+      "arguments": [
+        {
+          "name": "prompt",
+          "type": "text",
+          "placeholder": "Ta question",
+          "required": true
+        }
+      ]
     }
   ],
   "preferences": [
@@ -35,6 +49,13 @@
       "title": "Chemin de la CLI Orca",
       "description": "Laisse vide pour utiliser la CLI embarquée dans Orca.app.",
       "placeholder": "/Applications/Orca.app/Contents/Resources/bin/orca"
+    },
+    {
+      "name": "defaultBot",
+      "type": "directory",
+      "required": false,
+      "title": "Bot par défaut",
+      "description": "Dossier du bot dans ~/.orca/bots, par exemple ~/.orca/bots/leglaude. Utilisé par « Demander au bot par défaut »."
     }
   ],
   "dependencies": {

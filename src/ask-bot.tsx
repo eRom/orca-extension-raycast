@@ -14,9 +14,9 @@ import { useForm, usePromise } from "@raycast/utils";
 import { useRef } from "react";
 import { AnswerView } from "./components/AnswerView";
 import { OrcaGuard } from "./components/OrcaGuard";
-import { type Bot, parseBotList, readBotFolders, sortBots } from "./lib/bots";
+import { type Bot, parseBotList, readBotFolders, readBotFromFolder, sortBots } from "./lib/bots";
 import { runOrca } from "./lib/orca-cli";
-import { getOrcaPath } from "./lib/preferences";
+import { getDefaultBotFolder, getOrcaPath } from "./lib/preferences";
 
 const LAST_BOT_KEY = "lastBotId";
 
@@ -29,10 +29,16 @@ async function loadBots(): Promise<Bot[]> {
   } catch {
     lastUsedId = undefined;
   }
-  return sortBots(parseBotList(result, readBotFolders()), lastUsedId);
+  return sortBots(parseBotList(result, readBotFolders()), lastUsedId, defaultBotId());
 }
 
-function PromptForm({ bot }: { bot: Bot }) {
+/** Id du bot par défaut des préférences, s'il pointe vers un dossier de bot valide. */
+function defaultBotId(): string | undefined {
+  const folder = getDefaultBotFolder();
+  return folder ? (readBotFromFolder(folder)?.id ?? undefined) : undefined;
+}
+
+export function PromptForm({ bot }: { bot: Bot }) {
   const { push } = useNavigation();
   // Garde contre le double envoi : deux validations rapprochées lanceraient deux fois le prompt.
   const isSubmitting = useRef(false);
@@ -73,8 +79,10 @@ function PromptForm({ bot }: { bot: Bot }) {
   );
 }
 
-function BotList() {
+/** Liste des bots. Avec `prompt` (venu de « Demander au bot par défaut »), choisir un bot envoie directement ce prompt. */
+export function BotList({ prompt }: { prompt?: string } = {}) {
   const { push } = useNavigation();
+  const defaultId = defaultBotId();
   const {
     data: bots,
     isLoading,
@@ -114,11 +122,19 @@ function BotList() {
       });
       return;
     }
+    if (prompt) {
+      push(<AnswerView bot={bot} prompt={prompt} onAskAgain={() => push(<PromptForm bot={bot} />)} />);
+      return;
+    }
     push(<PromptForm bot={bot} />);
   };
 
   return (
-    <List isLoading={isLoading} searchBarPlaceholder="Chercher un bot">
+    <List
+      isLoading={isLoading}
+      navigationTitle={prompt ? "Choisir un bot" : undefined}
+      searchBarPlaceholder={prompt ? "À quel bot poser ta question ?" : "Chercher un bot"}
+    >
       {error ? (
         <List.EmptyView icon={Icon.Warning} title="Impossible de lister les bots" description={error.message} />
       ) : bots !== undefined && bots.length === 0 ? (
@@ -135,10 +151,18 @@ function BotList() {
           title={bot.name}
           subtitle={bot.specialty}
           icon={bot.paused ? { source: Icon.Pause, tintColor: Color.SecondaryText } : Icon.Person}
-          accessories={[...(bot.harness ? [{ tag: bot.harness }] : []), ...(bot.paused ? [{ tag: "En pause" }] : [])]}
+          accessories={[
+            ...(bot.id === defaultId ? [{ tag: { value: "Par défaut", color: Color.Blue } }] : []),
+            ...(bot.harness ? [{ tag: bot.harness }] : []),
+            ...(bot.paused ? [{ tag: "En pause" }] : []),
+          ]}
           actions={
             <ActionPanel>
-              <Action title="Écrire au bot" icon={Icon.Message} onAction={() => writeToBot(bot)} />
+              <Action
+                title={prompt ? "Envoyer la question" : "Écrire au bot"}
+                icon={Icon.Message}
+                onAction={() => writeToBot(bot)}
+              />
             </ActionPanel>
           }
         />

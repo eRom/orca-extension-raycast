@@ -5,6 +5,7 @@ Pilote Orca depuis Raycast, sans quitter ce que tu fais. L'extension appelle la 
 ## Commandes
 
 - **Demander à un bot** : choisis un bot Orca, écris-lui un prompt et lis sa réponse directement dans Raycast. Chaque question ouvre un nouveau chat du bot.
+- **Demander au bot par défaut** : tape ta question directement dans la barre Raycast, la réponse du bot par défaut s'affiche. Sans bot par défaut, tu choisis le bot et la question part aussitôt.
 - **Agents ouverts** : la liste de tes agents Orca, rangés en « Attend ta réponse », « En cours » et « Terminés », rafraîchie toutes les 5 secondes. Tu peux lire la conversation d'un agent, aller voir son terminal, ou copier son ID de session.
 
 ## Installation locale
@@ -16,9 +17,10 @@ bun run dev
 
 `bun run dev` lance `ray develop` : l'extension apparaît dans Raycast tant que la commande tourne. Il faut Raycast et Orca installés sur ce Mac.
 
-## Préférence
+## Préférences
 
 - **Chemin de la CLI Orca** : laisse vide pour utiliser la CLI embarquée (`/Applications/Orca.app/Contents/Resources/bin/orca`). Renseigne-la seulement si ta CLI est ailleurs.
+- **Bot par défaut** : le dossier d'un bot dans `~/.orca/bots` (par exemple `~/.orca/bots/leglaude`). L'extension lit son `bot.json` (id, nom, agent). Ce bot apparaît en tête avec le tag « Par défaut ». Un bot en pause n'est pas détecté avant l'envoi : c'est Orca qui refuse la question.
 
 ## Limites connues
 
